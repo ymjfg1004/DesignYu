@@ -1,13 +1,12 @@
 /**
  * Preset storage abstraction:
- * - Local dev (no KV env vars): uses data/presets.json via fs
- * - Vercel deployment (KV_REST_API_URL set): uses Vercel KV (Redis)
+ * - Local dev: uses data/presets.json (fs)
+ * - Vercel + Upstash: uses @upstash/redis (UPSTASH_REDIS_REST_URL / TOKEN)
  */
 
-const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-const KV_KEY = 'design-yu-presets';
+const useRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+const REDIS_KEY = 'design-yu-presets';
 
-// File-system helpers (only used when useKV is false / local dev)
 function readFile(): unknown[] {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs') as typeof import('fs');
@@ -28,15 +27,23 @@ function writeFile(data: unknown[]): void {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
+async function getRedis() {
+  const { Redis } = await import('@upstash/redis');
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+}
+
 function getId(p: unknown): string {
   const x = p as Record<string, unknown>;
   return ((x.preset as Record<string, unknown>)?.id as string) || (x.id as string) || '';
 }
 
 export async function getAllPresets(): Promise<unknown[]> {
-  if (useKV) {
-    const { kv } = await import('@vercel/kv');
-    return (await kv.get<unknown[]>(KV_KEY)) ?? [];
+  if (useRedis) {
+    const redis = await getRedis();
+    return (await redis.get<unknown[]>(REDIS_KEY)) ?? [];
   }
   return readFile();
 }
@@ -46,9 +53,9 @@ export async function upsertPreset(preset: unknown): Promise<void> {
   const idx = list.findIndex(p => getId(p) === getId(preset));
   if (idx >= 0) list[idx] = preset;
   else list.unshift(preset);
-  if (useKV) {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(KV_KEY, list);
+  if (useRedis) {
+    const redis = await getRedis();
+    await redis.set(REDIS_KEY, list);
   } else {
     writeFile(list);
   }
@@ -68,9 +75,9 @@ export async function updatePreset(id: string, patch: unknown): Promise<void> {
       };
     }
   }
-  if (useKV) {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(KV_KEY, list);
+  if (useRedis) {
+    const redis = await getRedis();
+    await redis.set(REDIS_KEY, list);
   } else {
     writeFile(list);
   }
@@ -78,9 +85,9 @@ export async function updatePreset(id: string, patch: unknown): Promise<void> {
 
 export async function deletePreset(id: string): Promise<void> {
   const list = (await getAllPresets()).filter(p => getId(p) !== id);
-  if (useKV) {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(KV_KEY, list);
+  if (useRedis) {
+    const redis = await getRedis();
+    await redis.set(REDIS_KEY, list);
   } else {
     writeFile(list);
   }

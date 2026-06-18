@@ -37,7 +37,7 @@ export function ComponentPreview({ compKey }: { compKey: string }) {
         type BSz = { name: string; h: number; px: number; py: number; fs: number };
         const bs = s as { borderRadius: number; sizes: BSz[]; variants: Record<string, { bg: PaletteKey | null; bgShade: Shade; border: PaletteKey | null; borderShade: Shade }> };
         const sizes: BSz[] = bs.sizes ?? [];
-        type SC = { bgColor: PaletteKey|null; bgShade: Shade; borderColor: PaletteKey|null; borderShade: Shade; textColor: PaletteKey|null; textShade: Shade };
+        type SC = { bgColor: PaletteKey|null; bgShade: Shade; bgOpacity?: number; borderColor: PaletteKey|null; borderShade: Shade; borderOpacity?: number; textColor: PaletteKey|null; textShade: Shade; textOpacity?: number };
         type BV = { default?: SC; hover?: SC; active?: SC; disabled?: SC };
         const fallbackSC: SC = { bgColor: null, bgShade: 500, borderColor: null, borderShade: 500, textColor: 'white', textShade: 500 };
         const stateStyle = (sc: SC) => ({
@@ -99,7 +99,7 @@ export function ComponentPreview({ compKey }: { compKey: string }) {
 
       {/* ─── INPUT ─── */}
       {compKey === 'input' && (() => {
-        type IS = { name: string; height: number; paddingX: number; fontSize: number; borderRadius: number; defaultBgColor: PaletteKey|null; defaultBgShade: Shade; borderColor: PaletteKey|null; borderShade: Shade; defaultTextColor: PaletteKey|null; defaultTextShade: Shade; focusBgColor: PaletteKey|null; focusBgShade: Shade; focusColor: PaletteKey|null; focusShade: Shade; focusTextColor: PaletteKey|null; focusTextShade: Shade; errorBgColor: PaletteKey|null; errorBgShade: Shade; errorColor: PaletteKey|null; errorShade: Shade; errorTextColor: PaletteKey|null; errorTextShade: Shade; disabledBgColor: PaletteKey|null; disabledBgShade: Shade; disabledColor: PaletteKey|null; disabledShade: Shade; disabledTextColor: PaletteKey|null; disabledTextShade: Shade; readonlyBgColor: PaletteKey|null; readonlyBgShade: Shade; readonlyColor: PaletteKey|null; readonlyShade: Shade; readonlyTextColor: PaletteKey|null; readonlyTextShade: Shade };
+        type IS = { name: string; height: number; paddingX: number; fontSize: number; borderRadius: number; defaultBgColor: PaletteKey|null; defaultBgShade: Shade; defaultBgOpacity?: number; borderColor: PaletteKey|null; borderShade: Shade; borderOpacity?: number; defaultTextColor: PaletteKey|null; defaultTextShade: Shade; defaultTextOpacity?: number; focusBgColor: PaletteKey|null; focusBgShade: Shade; focusBgOpacity?: number; focusColor: PaletteKey|null; focusShade: Shade; focusOpacity?: number; focusTextColor: PaletteKey|null; focusTextShade: Shade; focusTextOpacity?: number; errorBgColor: PaletteKey|null; errorBgShade: Shade; errorBgOpacity?: number; errorColor: PaletteKey|null; errorShade: Shade; errorOpacity?: number; errorTextColor: PaletteKey|null; errorTextShade: Shade; errorTextOpacity?: number; disabledBgColor: PaletteKey|null; disabledBgShade: Shade; disabledBgOpacity?: number; disabledColor: PaletteKey|null; disabledShade: Shade; disabledOpacity?: number; disabledTextColor: PaletteKey|null; disabledTextShade: Shade; disabledTextOpacity?: number; readonlyBgColor: PaletteKey|null; readonlyBgShade: Shade; readonlyBgOpacity?: number; readonlyColor: PaletteKey|null; readonlyShade: Shade; readonlyOpacity?: number; readonlyTextColor: PaletteKey|null; readonlyTextShade: Shade; readonlyTextOpacity?: number };
         const sets = (s.sets ?? []) as IS[];
         const STATES = (set: IS) => [
           { label: 'Default',  border: gc(set.borderColor,   set.borderShade,   set.borderOpacity   ?? 100), bg: gc(set.defaultBgColor,  set.defaultBgShade,  set.defaultBgOpacity  ?? 100), color: gc(set.defaultTextColor,  set.defaultTextShade,  set.defaultTextOpacity  ?? 100), disabled: false },
@@ -528,7 +528,7 @@ export function ComponentPreview({ compKey }: { compKey: string }) {
 
       {/* ─── TAB ─── */}
       {compKey === 'tab' && (() => {
-        type TS = { type: string; label: string; fontSize: number; paddingX: number; paddingY: number; borderRadius: number; activeColor: PaletteKey|null; activeShade: Shade; activeBgColor: PaletteKey|null; activeBgShade: Shade };
+        type TS = { type: string; label: string; fontSize: number; paddingX: number; paddingY: number; borderRadius: number; activeColor: PaletteKey|null; activeShade: Shade; activeBgColor: PaletteKey|null; activeBgShade: Shade; inactiveColor?: PaletteKey|null; inactiveShade?: Shade; trackColor?: PaletteKey|null; trackShade?: Shade };
         const styles: TS[] = (s.styles as TS[]) ?? [];
         const tabLabels = ['홈', '프로필', '설정', '알림'];
         const inactiveColor = '#6b7280';

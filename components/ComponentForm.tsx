@@ -461,7 +461,7 @@ export function ComponentForm({ compKey }: { compKey: string }) {
                             { label: 'Active',   stateKey: 'active'   },
                             { label: 'Disabled', stateKey: 'disabled' },
                           ] as const).map(({ label, stateKey }) => {
-                            const st: SC = (v as Record<string, SC>)[stateKey] ?? { bgColor: null, bgShade: 500, bgOpacity: 100, borderColor: null, borderShade: 500, borderOpacity: 100, textColor: 'white', textShade: 500, textOpacity: 100 };
+                            const st: SC = ((v as Record<string, unknown>)[stateKey] as SC) ?? { bgColor: null, bgShade: 500 as Shade, bgOpacity: 100, borderColor: null, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 };
                             const histKey = `${vname}:${stateKey}`;
                             const updSt = (patch: Partial<SC>) => {
                               setUndoHistory(prev => ({ ...prev, [histKey]: [...(prev[histKey] ?? []), st] }));

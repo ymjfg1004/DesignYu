@@ -369,7 +369,14 @@ export const useDS = create<DSStore>()(
         fetch('/api/presets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ designYu: true, version: '1', preset: { id, name, createdAt }, palettes, components }),
+          body: JSON.stringify({
+            designYu: true, version: '1',
+            preset: { id, name, createdAt },
+            palettes, components,
+            semanticList: s.semanticList,
+            bgGroup: s.bgGroup,
+            borderGroup: s.borderGroup,
+          }),
         }).catch(() => {});
       },
       loadPreset: (id) =>

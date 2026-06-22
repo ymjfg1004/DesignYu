@@ -84,7 +84,7 @@ function SwatchCell({
           if (!isValidHex(`#${draft}`)) setDraft(color.replace('#', ''));
         }}
         className="w-full font-mono text-gray-600 border border-gray-200 rounded px-1 py-1.5 focus:outline-none focus:border-blue-400 text-center bg-white hover:border-gray-300 transition-colors"
-        style={{ fontSize: 13 }}
+        style={{ fontSize: 14 }}
       />
     </div>
   );

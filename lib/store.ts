@@ -228,6 +228,23 @@ interface DSStore {
   loadPreset: (id: string) => void;
   deletePreset: (id: string) => void;
   renamePreset: (id: string, name: string) => void;
+
+  // 디자인 세트 (편집 컨텍스트)
+  currentSetId: string | null;
+  currentSetName: string;
+  startNewSet: (name: string) => void;
+  openSet: (data: FullPresetData) => void;
+  saveCurrentSet: (name?: string) => string;
+}
+
+interface FullPresetData {
+  preset?: { id?: string; name?: string };
+  palettes?: Record<string, Record<string, string>>;
+  semanticList?: SemanticItem[];
+  bgGroup?: GroupColor[];
+  borderGroup?: GroupColor[];
+  components?: Record<string, unknown>;
+  pluginComponents?: Record<string, unknown>;
 }
 
 const ALL_KEYS = Object.keys(PALETTE_DEFAULTS) as PaletteKey[];
@@ -395,6 +412,75 @@ export const useDS = create<DSStore>()(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ preset: { name } }),
         }).catch(() => {});
+      },
+
+      currentSetId: null,
+      currentSetName: '',
+
+      startNewSet: (name) =>
+        set({
+          semanticList: JSON.parse(JSON.stringify(DEFAULT_SEMANTIC_LIST)),
+          palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
+          bgGroup: JSON.parse(JSON.stringify(DEFAULT_BG_GROUP)),
+          borderGroup: JSON.parse(JSON.stringify(DEFAULT_BORDER_GROUP)),
+          components: JSON.parse(JSON.stringify(defaultComponents)),
+          currentSetId: null,
+          currentSetName: name,
+        }),
+
+      openSet: (data) =>
+        set((s) => {
+          const next: Partial<DSStore> = {
+            currentSetId: data.preset?.id ?? null,
+            currentSetName: data.preset?.name ?? '',
+          };
+          if (data.palettes) {
+            const pals = { ...s.palettes };
+            Object.entries(data.palettes).forEach(([k, scale]) => {
+              if (!(k in pals)) return;
+              const sc = scale as Record<string, string>;
+              pals[k as PaletteKey] = { base: sc['500'] ?? pals[k as PaletteKey].base, scale: sc as unknown as Record<Shade, string> };
+            });
+            next.palettes = pals;
+          }
+          if (data.semanticList) next.semanticList = data.semanticList;
+          if (data.bgGroup) next.bgGroup = data.bgGroup;
+          if (data.borderGroup) next.borderGroup = data.borderGroup;
+          const comps = data.pluginComponents ?? data.components;
+          if (comps) next.components = comps as typeof defaultComponents;
+          return next;
+        }),
+
+      saveCurrentSet: (name) => {
+        const s = get();
+        const id = s.currentSetId ?? Date.now().toString();
+        const nm = (name ?? s.currentSetName).trim() || `디자인 세트 ${s.presets.length + 1}`;
+        const createdAt = new Date().toISOString();
+        const components = JSON.parse(JSON.stringify(s.components));
+        const palettes: Record<string, Record<string, string>> = {};
+        Object.entries(s.palettes).forEach(([k, pal]) => {
+          palettes[k] = Object.fromEntries(Object.entries(pal.scale).map(([sh, hex]) => [sh, hex as string]));
+        });
+        set((prev) => {
+          const exists = prev.presets.some((p) => p.id === id);
+          const presets = exists
+            ? prev.presets.map((p) => (p.id === id ? { ...p, name: nm, components } : p))
+            : [...prev.presets, { id, name: nm, createdAt, components }];
+          return { presets, currentSetId: id, currentSetName: nm };
+        });
+        fetch('/api/presets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            designYu: true, version: '1',
+            preset: { id, name: nm, createdAt, updatedAt: createdAt },
+            palettes, components,
+            semanticList: s.semanticList,
+            bgGroup: s.bgGroup,
+            borderGroup: s.borderGroup,
+          }),
+        }).catch(() => {});
+        return id;
       },
 
       getColor: (palKey, shade) => {

@@ -89,8 +89,8 @@ const DEFAULT_BORDER_GROUP: GroupColor[] = [
 ];
 
 const defaultComponents = {
-  button: { borderRadius: 8,
-    sizes: [ { name: 'S', h: 32, px: 12, py: 0, fs: 12 }, { name: 'M', h: 40, px: 16, py: 0, fs: 14 }, { name: 'L', h: 48, px: 20, py: 0, fs: 16 } ],
+  button: { borderRadius: 4,
+    sizes: [ { name: 'S', h: 24, px: 8, py: 0, fs: 12 }, { name: 'M', h: 32, px: 12, py: 0, fs: 14 }, { name: 'L', h: 40, px: 16, py: 0, fs: 16 } ],
     variants: {
       Primary:   { default: { bgColor: 'primary' as PaletteKey, bgShade: 500 as Shade, bgOpacity: 100, borderColor: null, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 }, hover: { bgColor: 'primary' as PaletteKey, bgShade: 600 as Shade, bgOpacity: 100, borderColor: null, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 }, active: { bgColor: 'primary' as PaletteKey, bgShade: 700 as Shade, bgOpacity: 100, borderColor: null, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 }, disabled: { bgColor: 'gray' as PaletteKey, bgShade: 200 as Shade, bgOpacity: 100, borderColor: null, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'gray' as PaletteKey, textShade: 400 as Shade, textOpacity: 100 } },
       Secondary: { default: { bgColor: null, bgShade: 500 as Shade, bgOpacity: 100, borderColor: 'primary' as PaletteKey, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'primary' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 }, hover: { bgColor: 'primary' as PaletteKey, bgShade: 100 as Shade, bgOpacity: 100, borderColor: 'primary' as PaletteKey, borderShade: 500 as Shade, borderOpacity: 100, textColor: 'primary' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 }, active: { bgColor: 'primary' as PaletteKey, bgShade: 200 as Shade, bgOpacity: 100, borderColor: 'primary' as PaletteKey, borderShade: 600 as Shade, borderOpacity: 100, textColor: 'primary' as PaletteKey, textShade: 600 as Shade, textOpacity: 100 }, disabled: { bgColor: null, bgShade: 500 as Shade, bgOpacity: 100, borderColor: 'gray' as PaletteKey, borderShade: 200 as Shade, borderOpacity: 100, textColor: 'gray' as PaletteKey, textShade: 400 as Shade, textOpacity: 100 } },
@@ -99,7 +99,7 @@ const defaultComponents = {
     },
   },
   input: { sets: [
-    { name: 'Default', height: 40, paddingX: 12, fontSize: 14, borderRadius: 8,
+    { name: 'Default', height: 40, paddingX: 12, fontSize: 14, borderRadius: 4,
       defaultBgColor: 'white' as PaletteKey,   defaultBgShade: 500 as Shade, defaultBgOpacity: 100, borderColor: 'gray'    as PaletteKey, borderShade: 300 as Shade, borderOpacity: 100, defaultTextColor: 'gray'  as PaletteKey, defaultTextShade: 900 as Shade, defaultTextOpacity: 100,
       focusBgColor:   'white' as PaletteKey,   focusBgShade:   500 as Shade, focusBgOpacity:   100, focusColor:  'primary' as PaletteKey, focusShade:  500 as Shade, focusOpacity:  100, focusTextColor:   'gray'  as PaletteKey, focusTextShade:   900 as Shade, focusTextOpacity:   100,
       errorBgColor:   'white' as PaletteKey,   errorBgShade:   500 as Shade, errorBgOpacity:   100, errorColor:  'error'   as PaletteKey, errorShade:  500 as Shade, errorOpacity:  100, errorTextColor:   'gray'  as PaletteKey, errorTextShade:   900 as Shade, errorTextOpacity:   100,
@@ -107,9 +107,9 @@ const defaultComponents = {
       readonlyBgColor:'gray'  as PaletteKey,   readonlyBgShade:100 as Shade, readonlyBgOpacity:100, readonlyColor:'gray'   as PaletteKey, readonlyShade:300 as Shade, readonlyOpacity:100, readonlyTextColor:'gray' as PaletteKey, readonlyTextShade:500 as Shade, readonlyTextOpacity:100,
     },
   ] as InputSet[] },
-  textarea:   { borderRadius: 8,   height: 96,  paddingX: 12, paddingY: 10, fontSize: 14, borderColor: 'gray' as PaletteKey, borderShade: 300 as Shade, required: false, showCharCount: false, maxChars: 100 },
+  textarea:   { borderRadius: 4,   height: 96,  paddingX: 12, paddingY: 10, fontSize: 14, borderColor: 'gray' as PaletteKey, borderShade: 300 as Shade, required: false, showCharCount: false, maxChars: 100 },
   select: {
-    borderRadius: 8, height: 40, paddingX: 12, fontSize: 14,
+    borderRadius: 4, height: 40, paddingX: 12, fontSize: 14,
     iconSvg: '', iconSize: 16, iconColor: 'gray' as PaletteKey, iconShade: 400 as Shade,
     defaultBgColor: 'white' as PaletteKey, defaultBgShade: 500 as Shade, defaultBgOpacity: 100, borderColor: 'gray' as PaletteKey, borderShade: 300 as Shade, borderOpacity: 100, defaultTextColor: 'gray' as PaletteKey, defaultTextShade: 900 as Shade, defaultTextOpacity: 100,
     focusBgColor: 'white' as PaletteKey, focusBgShade: 500 as Shade, focusBgOpacity: 100, focusColor: 'primary' as PaletteKey, focusShade: 500 as Shade, focusOpacity: 100, focusTextColor: 'gray' as PaletteKey, focusTextShade: 900 as Shade, focusTextOpacity: 100,
@@ -128,7 +128,7 @@ const defaultComponents = {
     offDisBgColor: 'gray' as PaletteKey, offDisBgShade: 200 as Shade, offDisBgOpacity: 100,
     offDisDotColor: 'white' as PaletteKey, offDisDotShade: 500 as Shade,
   },
-  badge:      { borderRadius: 100, paddingX: 8,  paddingY: 3,  fontSize: 12,
+  badge:      { borderRadius: 4, paddingX: 8,  paddingY: 3,  fontSize: 12,
     variants: [
       { name: 'Primary', bgColor: 'primary', bgShade: 100, bgOpacity: 100, textColor: 'primary', textShade: 700, textOpacity: 100 },
       { name: 'Success', bgColor: 'success', bgShade: 100, bgOpacity: 100, textColor: 'success', textShade: 700, textOpacity: 100 },
@@ -137,7 +137,7 @@ const defaultComponents = {
       { name: 'Neutral', bgColor: 'gray',    bgShade: 100, bgOpacity: 100, textColor: 'gray',    textShade: 700, textOpacity: 100 },
     ],
   },
-  chip:       { borderRadius: 100, paddingX: 12, paddingY: 6,  fontSize: 13,
+  chip:       { borderRadius: 4, paddingX: 12, paddingY: 6,  fontSize: 13,
     variants: [
       { name: '디자인', bgColor: 'primary' as PaletteKey, bgShade: 100 as Shade, bgOpacity: 100, textColor: 'primary' as PaletteKey, textShade: 700 as Shade, textOpacity: 100, borderColor: 'primary' as PaletteKey, borderShade: 200 as Shade },
       { name: '개발',   bgColor: 'success' as PaletteKey, bgShade: 100 as Shade, bgOpacity: 100, textColor: 'success' as PaletteKey, textShade: 700 as Shade, textOpacity: 100, borderColor: 'success' as PaletteKey, borderShade: 200 as Shade },
@@ -145,9 +145,9 @@ const defaultComponents = {
       { name: '마케팅', bgColor: 'error'   as PaletteKey, bgShade: 100 as Shade, bgOpacity: 100, textColor: 'error'   as PaletteKey, textShade: 700 as Shade, textOpacity: 100, borderColor: 'error'   as PaletteKey, borderShade: 200 as Shade },
     ],
   },
-  card:       { borderRadius: 12,  paddingX: 20, paddingY: 20, gap: 12, shadowOpacity: 8, titleFontSize: 16, bodyFontSize: 13, btnVariant: 'Primary' },
-  alert:      { borderRadius: 8,   paddingX: 16, paddingY: 14, fontSize: 14 },
-  toast:      { borderRadius: 10,  paddingX: 16, paddingY: 14, fontSize: 14,
+  card:       { borderRadius: 4,  paddingX: 20, paddingY: 20, gap: 12, shadowOpacity: 8, titleFontSize: 16, bodyFontSize: 13, btnVariant: 'Primary' },
+  alert:      { borderRadius: 4,   paddingX: 16, paddingY: 14, fontSize: 14 },
+  toast:      { borderRadius: 4,  paddingX: 16, paddingY: 14, fontSize: 14,
     variants: [
       { name: 'Success', icon: '✅', bgColor: 'success' as PaletteKey, bgShade: 800 as Shade, bgOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 },
       { name: 'Error',   icon: '❌', bgColor: 'error'   as PaletteKey, bgShade: 700 as Shade, bgOpacity: 100, textColor: 'white' as PaletteKey, textShade: 500 as Shade, textOpacity: 100 },
@@ -156,30 +156,30 @@ const defaultComponents = {
   },
   tab: {
     styles: [
-      { type: 'line',    label: 'Line',    fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 8,
+      { type: 'line',    label: 'Line',    fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 4,
         activeColor: 'primary' as PaletteKey, activeShade: 500 as Shade, activeBgColor: null as PaletteKey|null, activeBgShade: 100 as Shade,
         inactiveColor: 'gray' as PaletteKey, inactiveShade: 400 as Shade,
         trackColor: 'gray' as PaletteKey, trackShade: 200 as Shade },
-      { type: 'pill',    label: 'Pill',    fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 99,
+      { type: 'pill',    label: 'Pill',    fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 4,
         activeColor: 'primary' as PaletteKey, activeShade: 500 as Shade, activeBgColor: 'primary' as PaletteKey, activeBgShade: 100 as Shade,
         inactiveColor: 'gray' as PaletteKey, inactiveShade: 400 as Shade,
         trackColor: null as PaletteKey|null, trackShade: 200 as Shade },
-      { type: 'box',     label: 'Box',     fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 8,
+      { type: 'box',     label: 'Box',     fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 4,
         activeColor: 'primary' as PaletteKey, activeShade: 500 as Shade, activeBgColor: null as PaletteKey|null, activeBgShade: 100 as Shade,
         inactiveColor: 'gray' as PaletteKey, inactiveShade: 400 as Shade,
         trackColor: 'gray' as PaletteKey, trackShade: 100 as Shade },
-      { type: 'segment', label: 'Segment', fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 8,
+      { type: 'segment', label: 'Segment', fontSize: 14, paddingX: 16, paddingY: 10, borderRadius: 4,
         activeColor: 'primary' as PaletteKey, activeShade: 500 as Shade, activeBgColor: null as PaletteKey|null, activeBgShade: 100 as Shade,
         inactiveColor: 'gray' as PaletteKey, inactiveShade: 400 as Shade,
         trackColor: 'gray' as PaletteKey, trackShade: 200 as Shade },
     ],
   },
   avatar:     { sizeS: 32,         sizeM: 40,   sizeL: 48,    sizeXL: 64, bgColor: 'primary' as PaletteKey, bgShade: 400 as Shade, textColor: 'white' as PaletteKey, textShade: 500 as Shade },
-  tooltip:    { borderRadius: 6,   paddingX: 10, paddingY: 6,  fontSize: 12 },
+  tooltip:    { borderRadius: 4,   paddingX: 10, paddingY: 6,  fontSize: 12 },
   spinner:    { sizeS: 16,         sizeM: 24,   sizeL: 32,    strokeWidth: 2, activeColor: 'primary' as PaletteKey, activeShade: 500 as Shade, bgColor: 'gray' as PaletteKey, bgShade: 200 as Shade },
-  skeleton:   { borderRadius: 8,   height: 16 },
-  progress:   { borderRadius: 100, height: 8 },
-  pagination: { borderRadius: 8, size: 36, fontSize: 14, gap: 4, showFirstLast: true,
+  skeleton:   { borderRadius: 4,   height: 16 },
+  progress:   { borderRadius: 4, height: 8 },
+  pagination: { borderRadius: 4, size: 36, fontSize: 14, gap: 4, showFirstLast: true,
     activeColor: 'white' as PaletteKey, activeShade: 500 as Shade,
     activeBgColor: 'primary' as PaletteKey, activeBgShade: 500 as Shade,
     inactiveColor: 'gray' as PaletteKey, inactiveShade: 700 as Shade,
@@ -496,6 +496,6 @@ export const useDS = create<DSStore>()(
         components: get().components,
       }),
     }),
-    { name: 'design-yu-store-v28' }
+    { name: 'design-yu-store-v29' }
   )
 );

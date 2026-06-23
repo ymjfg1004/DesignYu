@@ -406,7 +406,7 @@ export function ComponentForm({ compKey }: { compKey: string }) {
               </Section>
             ))}
             <button
-              onClick={() => upd({ sizes: [...sizes, { name: `${sizes.length + 1}`, h: 40, px: 16, py: 10, fs: 14 }] })}
+              onClick={() => upd({ sizes: [...sizes, { name: `${sizes.length + 1}`, h: 40, px: 16, py: 0, fs: 14 }] })}
               className="w-full py-1.5 text-[11px] font-semibold text-gray-400 border border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-500 transition-colors mb-6"
             >
               + Size 추가
@@ -650,7 +650,7 @@ export function ComponentForm({ compKey }: { compKey: string }) {
               </Section>
             ))}
             <button
-              onClick={() => upd({ sets: [...sets, { name: `Set ${sets.length + 1}`, height: 40, paddingX: 12, fontSize: 14, borderRadius: 8, defaultBgColor: 'white' as PaletteKey, defaultBgShade: 500 as Shade, borderColor: 'gray' as PaletteKey, borderShade: 300 as Shade, defaultTextColor: 'gray' as PaletteKey, defaultTextShade: 900 as Shade, focusBgColor: 'white' as PaletteKey, focusBgShade: 500 as Shade, focusColor: 'primary' as PaletteKey, focusShade: 500 as Shade, focusTextColor: 'gray' as PaletteKey, focusTextShade: 900 as Shade, errorBgColor: 'white' as PaletteKey, errorBgShade: 500 as Shade, errorColor: 'error' as PaletteKey, errorShade: 500 as Shade, errorTextColor: 'gray' as PaletteKey, errorTextShade: 900 as Shade, disabledBgColor: 'gray' as PaletteKey, disabledBgShade: 100 as Shade, disabledColor: 'gray' as PaletteKey, disabledShade: 200 as Shade, disabledTextColor: 'gray' as PaletteKey, disabledTextShade: 400 as Shade, readonlyBgColor: 'gray' as PaletteKey, readonlyBgShade: 100 as Shade, readonlyColor: 'gray' as PaletteKey, readonlyShade: 300 as Shade, readonlyTextColor: 'gray' as PaletteKey, readonlyTextShade: 500 as Shade }] })}
+              onClick={() => upd({ sets: [...sets, { name: `Set ${sets.length + 1}`, height: 40, paddingX: 12, fontSize: 14, borderRadius: 4, defaultBgColor: 'white' as PaletteKey, defaultBgShade: 500 as Shade, borderColor: 'gray' as PaletteKey, borderShade: 300 as Shade, defaultTextColor: 'gray' as PaletteKey, defaultTextShade: 900 as Shade, focusBgColor: 'white' as PaletteKey, focusBgShade: 500 as Shade, focusColor: 'primary' as PaletteKey, focusShade: 500 as Shade, focusTextColor: 'gray' as PaletteKey, focusTextShade: 900 as Shade, errorBgColor: 'white' as PaletteKey, errorBgShade: 500 as Shade, errorColor: 'error' as PaletteKey, errorShade: 500 as Shade, errorTextColor: 'gray' as PaletteKey, errorTextShade: 900 as Shade, disabledBgColor: 'gray' as PaletteKey, disabledBgShade: 100 as Shade, disabledColor: 'gray' as PaletteKey, disabledShade: 200 as Shade, disabledTextColor: 'gray' as PaletteKey, disabledTextShade: 400 as Shade, readonlyBgColor: 'gray' as PaletteKey, readonlyBgShade: 100 as Shade, readonlyColor: 'gray' as PaletteKey, readonlyShade: 300 as Shade, readonlyTextColor: 'gray' as PaletteKey, readonlyTextShade: 500 as Shade }] })}
               className="w-full py-1.5 text-[11px] font-semibold text-gray-400 border border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-500 transition-colors mb-6"
             >
               + Set 추가

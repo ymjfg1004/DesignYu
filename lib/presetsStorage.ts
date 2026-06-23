@@ -4,7 +4,10 @@
  * - Vercel + Upstash: uses @upstash/redis (UPSTASH_REDIS_REST_URL / TOKEN)
  */
 
-const useRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+// Vercel Upstash 통합(UPSTASH_*)과 레거시 Vercel KV(KV_*) 둘 다 지원
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+const useRedis = !!(REDIS_URL && REDIS_TOKEN);
 const REDIS_KEY = 'design-yu-presets';
 
 function readFile(): unknown[] {
@@ -30,8 +33,8 @@ function writeFile(data: unknown[]): void {
 async function getRedis() {
   const { Redis } = await import('@upstash/redis');
   return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: REDIS_URL!,
+    token: REDIS_TOKEN!,
   });
 }
 

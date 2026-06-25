@@ -249,6 +249,20 @@ interface FullPresetData {
 
 const ALL_KEYS = Object.keys(PALETTE_DEFAULTS) as PaletteKey[];
 
+// 외부(플러그인 등) 컴포넌트 데이터를 기본 구조 위에 병합 — 누락된 필드(예: tab.styles) 보존
+function normalizeComponents(incoming?: Record<string, unknown> | null): typeof defaultComponents {
+  const base = JSON.parse(JSON.stringify(defaultComponents)) as Record<string, Record<string, unknown>>;
+  if (incoming && typeof incoming === 'object') {
+    Object.keys(base).forEach((k) => {
+      const inc = incoming[k];
+      if (inc && typeof inc === 'object' && !Array.isArray(inc)) {
+        base[k] = { ...base[k], ...(inc as Record<string, unknown>) };
+      }
+    });
+  }
+  return base as unknown as typeof defaultComponents;
+}
+
 export const useDS = create<DSStore>()(
   persist(
     (set, get) => ({
@@ -399,7 +413,7 @@ export const useDS = create<DSStore>()(
       loadPreset: (id) =>
         set((s) => {
           const preset = s.presets.find((p) => p.id === id);
-          return preset ? { components: preset.components } : {};
+          return preset ? { components: normalizeComponents(preset.components as Record<string, unknown>) } : {};
         }),
       deletePreset: (id) => {
         set((s) => ({ presets: s.presets.filter((p) => p.id !== id) }));
@@ -447,7 +461,7 @@ export const useDS = create<DSStore>()(
           if (data.bgGroup) next.bgGroup = data.bgGroup;
           if (data.borderGroup) next.borderGroup = data.borderGroup;
           const comps = data.pluginComponents ?? data.components;
-          if (comps) next.components = comps as typeof defaultComponents;
+          if (comps) next.components = normalizeComponents(comps as Record<string, unknown>);
           return next;
         }),
 
@@ -496,6 +510,17 @@ export const useDS = create<DSStore>()(
         components: get().components,
       }),
     }),
-    { name: 'design-yu-store-v29' }
+    {
+      name: 'design-yu-store-v29',
+      // 저장된 상태를 불러올 때 컴포넌트를 기본 구조 위에 병합 — 과거에 깨진(tab.styles 누락 등) 데이터 복구
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<DSStore>;
+        return {
+          ...current,
+          ...p,
+          components: normalizeComponents(p.components as Record<string, unknown> | undefined),
+        };
+      },
+    }
   )
 );

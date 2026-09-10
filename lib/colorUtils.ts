@@ -48,7 +48,8 @@ export function generateScale(baseHex: string): ColorScale {
   const { h, s, l } = hexToHsl(baseHex);
 
   const lMap: Record<number, number> = {
-    100: Math.min(97, l + (97 - l) * 0.90),
+    50: Math.min(98, l + (98 - l) * 0.97),
+    100: Math.min(94, l + (97 - l) * 0.90),
     200: Math.min(95, l + (97 - l) * 0.72),
     300: Math.min(90, l + (97 - l) * 0.50),
     400: Math.min(85, l + (97 - l) * 0.25),
@@ -58,6 +59,7 @@ export function generateScale(baseHex: string): ColorScale {
     900: Math.max(8, l - (l - 8) * 0.82),
   };
   const sMap: Record<number, number> = {
+    50: Math.min(s * 0.30, 40),
     100: Math.min(s * 0.22, 30),
     200: Math.min(s * 0.42, 55),
     300: Math.min(s * 0.62, 75),
@@ -69,7 +71,7 @@ export function generateScale(baseHex: string): ColorScale {
   };
 
   const scale = { 500: baseHex } as ColorScale;
-  ([100, 200, 300, 400, 600, 700, 800, 900] as Shade[]).forEach((step) => {
+  ([50, 100, 200, 300, 400, 600, 700, 800, 900] as Shade[]).forEach((step) => {
     scale[step] = hslToHex(h, sMap[step], lMap[step]);
   });
   return scale;

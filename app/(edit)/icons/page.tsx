@@ -145,7 +145,7 @@ export default function IconsPage() {
   }, [layout]);
 
   const color = palettes[palKey]?.scale[shade] ?? '#374151';
-  const shades: Shade[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const shades: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
   const isDefault = palKey === DEFAULTS.palKey && shade === DEFAULTS.shade && size === DEFAULTS.size && strokeWidth === DEFAULTS.strokeWidth;
 
   const handleReset = () => { setPalKey(DEFAULTS.palKey); setShade(DEFAULTS.shade); setSize(DEFAULTS.size); setStrokeWidth(DEFAULTS.strokeWidth); setStrokeInput(String(DEFAULTS.strokeWidth)); };

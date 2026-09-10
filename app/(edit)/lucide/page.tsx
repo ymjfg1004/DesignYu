@@ -75,7 +75,7 @@ export default function LucidePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const color = palettes[palKey]?.scale[shade] ?? '#374151';
-  const shades: Shade[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const shades: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
   const filtered = useMemo(() =>
     search === '' ? LUCIDE_ICONS : LUCIDE_ICONS.filter(n => n.includes(search.toLowerCase().replace(/\s+/g, '-'))),

@@ -113,7 +113,7 @@ function PaletteSelect({
 }
 
 const SEMANTIC_IDS = new Set(['primary', 'secondary', 'info', 'success', 'error', 'warning']);
-const SHADES: Shade[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 const COMP_LABELS: Record<string, string> = {
   button: '🔘 Button', input: '📝 Input', textarea: '📄 Textarea', select: '📋 Select',

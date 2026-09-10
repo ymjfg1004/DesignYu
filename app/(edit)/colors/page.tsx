@@ -5,7 +5,7 @@ import { useDS } from '@/lib/store';
 import { isValidHex, getContrastColor } from '@/lib/colorUtils';
 import type { PaletteKey, Shade, BaseColorKey, GroupColor, SemanticItem } from '@/lib/types';
 
-const SHADES: Shade[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 const BASE_DEFS: { key: BaseColorKey; label: string }[] = [
   { key: 'white',   label: 'White'   },
@@ -99,7 +99,7 @@ function SwatchGrid({
   onSwatchChange: (shade: Shade, hex: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-9 gap-1.5">
+    <div className="grid grid-cols-10 gap-1.5">
       {SHADES.map((shade) => (
         <SwatchCell
           key={shade}
@@ -346,7 +346,7 @@ export default function ColorsPage() {
     <div className="p-8 max-w-[1400px] mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">컬러 시스템</h1>
-        <p className="text-sm text-gray-500 mt-1">기본 색상을 선택하거나 직접 입력하면 100~900 스케일이 자동 생성됩니다.</p>
+        <p className="text-sm text-gray-500 mt-1">기본 색상을 선택하거나 직접 입력하면 50~900 스케일이 자동 생성됩니다.</p>
       </div>
 
       {(() => {

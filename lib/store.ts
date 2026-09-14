@@ -453,11 +453,18 @@ export const useDS = create<DSStore>()(
             Object.entries(data.palettes).forEach(([k, scale]) => {
               if (!(k in pals)) return;
               const sc = scale as Record<string, string>;
-              pals[k as PaletteKey] = { base: sc['500'] ?? pals[k as PaletteKey].base, scale: sc as unknown as Record<Shade, string> };
+              const base = sc['500'] ?? pals[k as PaletteKey].base;
+              // 과거(50 shade 추가 이전)에 저장된 프리셋은 일부 shade가 누락될 수 있어 생성값으로 보완
+              pals[k as PaletteKey] = { base, scale: { ...generateScale(base), ...sc } as Record<Shade, string> };
             });
             next.palettes = pals;
           }
-          if (data.semanticList) next.semanticList = data.semanticList;
+          if (data.semanticList) {
+            next.semanticList = data.semanticList.map((item) => ({
+              ...item,
+              scale: { ...generateScale(item.base), ...item.scale },
+            }));
+          }
           if (data.bgGroup) next.bgGroup = data.bgGroup;
           if (data.borderGroup) next.borderGroup = data.borderGroup;
           const comps = data.pluginComponents ?? data.components;
@@ -512,12 +519,25 @@ export const useDS = create<DSStore>()(
     }),
     {
       name: 'design-yu-store-v29',
-      // 저장된 상태를 불러올 때 컴포넌트를 기본 구조 위에 병합 — 과거에 깨진(tab.styles 누락 등) 데이터 복구
+      // 저장된 상태를 불러올 때 컴포넌트를 기본 구조 위에 병합 — 과거에 깨진(tab.styles, 50 shade 누락 등) 데이터 복구
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<DSStore>;
+        const palettes = p.palettes
+          ? (Object.fromEntries(
+              Object.entries(p.palettes).map(([k, pal]) => [
+                k,
+                { base: pal.base, scale: { ...generateScale(pal.base), ...pal.scale } },
+              ])
+            ) as Record<PaletteKey, Palette>)
+          : current.palettes;
+        const semanticList = p.semanticList
+          ? p.semanticList.map((item) => ({ ...item, scale: { ...generateScale(item.base), ...item.scale } }))
+          : current.semanticList;
         return {
           ...current,
           ...p,
+          palettes,
+          semanticList,
           components: normalizeComponents(p.components as Record<string, unknown> | undefined),
         };
       },

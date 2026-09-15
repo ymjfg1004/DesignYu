@@ -7,9 +7,6 @@ import { useDS } from '@/lib/store';
 
 const NAV = [
   { href: '/colors', label: '컬러 시스템', icon: '🎨', match: (p: string) => p.startsWith('/colors') },
-  { href: '/icons',  label: '아이콘',     icon: '✦',  match: (p: string) => p.startsWith('/icons') },
-  { href: '/lucide', label: 'Lucide Icons', icon: '◈', match: (p: string) => p.startsWith('/lucide') },
-  { href: '/export', label: 'JSON 내보내기', icon: '📦', match: (p: string) => p.startsWith('/export') },
 ];
 
 const COMP_ITEMS = [

@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateScale } from './colorUtils';
-import type { Palette, PaletteKey, Shade, GroupColor, SemanticItem, DesignSystemData, InputSet, BaseColorItem } from './types';
+import type { Palette, PaletteKey, Shade, SemanticItem, DesignSystemData, InputSet, BaseColorItem } from './types';
 
+// 파로스/스텔라 컬러 시스템 (Figma: PHAROS 제품 디자인 > 24526:82154) 기준 값
 const PALETTE_DEFAULTS: Record<PaletteKey, string> = {
-  primary:   '#3b82f6',
+  primary:   '#003879',
   secondary: '#8b5cf6',
   info:      '#0ea5e9',
   success:   '#10b981',
@@ -12,65 +13,51 @@ const PALETTE_DEFAULTS: Record<PaletteKey, string> = {
   warning:   '#f59e0b',
   white:     '#ffffff',
   black:     '#000000',
-  rose:      '#f43f5e',
-  pink:      '#ec4899',
-  fuchsia:   '#d946ef',
-  purple:    '#a855f7',
-  violet:    '#8b5cf6',
-  indigo:    '#6366f1',
-  blue:      '#3b82f6',
-  sky:       '#0ea5e9',
-  cyan:      '#06b6d4',
-  teal:      '#14b8a6',
-  emerald:   '#10b981',
-  green:     '#22c55e',
-  lime:      '#84cc16',
-  yellow:    '#eab308',
-  amber:     '#f59e0b',
-  orange:    '#f97316',
-  red:       '#ef4444',
-  stone:     '#78716c',
-  neutral:   '#737373',
-  zinc:      '#71717a',
-  gray:      '#6b7280',
-  slate:     '#64748b',
+  gray:      '#888888',
+  slate:     '#9198b3',
+  blue:      '#82a3ff',
+  sky:       '#3b93e8',
+  red:       '#ff2828',
+  orange:    '#ff8500',
+  green:     '#33c481',
+  mint:      '#1fb2a9',
 };
 
 const TAILWIND_SCALES: Partial<Record<PaletteKey, Record<Shade, string>>> = {
   white: { 50:'#ffffff', 100:'#ffffff', 200:'#ffffff', 300:'#ffffff', 400:'#ffffff', 500:'#ffffff', 600:'#ffffff', 700:'#ffffff', 800:'#ffffff', 900:'#ffffff' },
   black: { 50:'#000000', 100:'#000000', 200:'#000000', 300:'#000000', 400:'#000000', 500:'#000000', 600:'#000000', 700:'#000000', 800:'#000000', 900:'#000000' },
-  rose:    { 50:'#fff1f2', 100:'#ffe4e6', 200:'#fecdd3', 300:'#fda4af', 400:'#fb7185', 500:'#f43f5e', 600:'#e11d48', 700:'#be123c', 800:'#9f1239', 900:'#881337' },
-  pink:    { 50:'#fdf2f8', 100:'#fce7f3', 200:'#fbcfe8', 300:'#f9a8d4', 400:'#f472b6', 500:'#ec4899', 600:'#db2777', 700:'#be185d', 800:'#9d174d', 900:'#831843' },
-  fuchsia: { 50:'#fdf4ff', 100:'#fae8ff', 200:'#f5d0fe', 300:'#f0abfc', 400:'#e879f9', 500:'#d946ef', 600:'#c026d3', 700:'#a21caf', 800:'#86198f', 900:'#701a75' },
-  purple:  { 50:'#faf5ff', 100:'#f3e8ff', 200:'#e9d5ff', 300:'#d8b4fe', 400:'#c084fc', 500:'#a855f7', 600:'#9333ea', 700:'#7e22ce', 800:'#6b21a8', 900:'#581c87' },
-  violet:  { 50:'#f5f3ff', 100:'#ede9fe', 200:'#ddd6fe', 300:'#c4b5fd', 400:'#a78bfa', 500:'#8b5cf6', 600:'#7c3aed', 700:'#6d28d9', 800:'#5b21b6', 900:'#4c1d95' },
-  indigo:  { 50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc', 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca', 800:'#3730a3', 900:'#312e81' },
-  blue:    { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
-  sky:     { 50:'#f0f9ff', 100:'#e0f2fe', 200:'#bae6fd', 300:'#7dd3fc', 400:'#38bdf8', 500:'#0ea5e9', 600:'#0284c7', 700:'#0369a1', 800:'#075985', 900:'#0c4a6e' },
-  cyan:    { 50:'#ecfeff', 100:'#cffafe', 200:'#a5f3fc', 300:'#67e8f9', 400:'#22d3ee', 500:'#06b6d4', 600:'#0891b2', 700:'#0e7490', 800:'#155e75', 900:'#164e63' },
-  teal:    { 50:'#f0fdfa', 100:'#ccfbf1', 200:'#99f6e4', 300:'#5eead4', 400:'#2dd4bf', 500:'#14b8a6', 600:'#0d9488', 700:'#0f766e', 800:'#115e59', 900:'#134e4a' },
-  emerald: { 50:'#ecfdf5', 100:'#d1fae5', 200:'#a7f3d0', 300:'#6ee7b7', 400:'#34d399', 500:'#10b981', 600:'#059669', 700:'#047857', 800:'#065f46', 900:'#064e3b' },
-  green:   { 50:'#f0fdf4', 100:'#dcfce7', 200:'#bbf7d0', 300:'#86efac', 400:'#4ade80', 500:'#22c55e', 600:'#16a34a', 700:'#15803d', 800:'#166534', 900:'#14532d' },
-  lime:    { 50:'#f7fee7', 100:'#ecfccb', 200:'#d9f99d', 300:'#bef264', 400:'#a3e635', 500:'#84cc16', 600:'#65a30d', 700:'#4d7c0f', 800:'#3f6212', 900:'#365314' },
-  yellow:  { 50:'#fefce8', 100:'#fef9c3', 200:'#fef08a', 300:'#fde047', 400:'#facc15', 500:'#eab308', 600:'#ca8a04', 700:'#a16207', 800:'#854d0e', 900:'#713f12' },
-  amber:   { 50:'#fffbeb', 100:'#fef3c7', 200:'#fde68a', 300:'#fcd34d', 400:'#fbbf24', 500:'#f59e0b', 600:'#d97706', 700:'#b45309', 800:'#92400e', 900:'#78350f' },
-  orange:  { 50:'#fff7ed', 100:'#ffedd5', 200:'#fed7aa', 300:'#fdba74', 400:'#fb923c', 500:'#f97316', 600:'#ea580c', 700:'#c2410c', 800:'#9a3412', 900:'#7c2d12' },
-  red:     { 50:'#fef2f2', 100:'#fee2e2', 200:'#fecaca', 300:'#fca5a5', 400:'#f87171', 500:'#ef4444', 600:'#dc2626', 700:'#b91c1c', 800:'#991b1b', 900:'#7f1d1d' },
-  stone:   { 50:'#fafaf9', 100:'#f5f5f4', 200:'#e7e5e4', 300:'#d6d3d1', 400:'#a8a29e', 500:'#78716c', 600:'#57534e', 700:'#44403c', 800:'#292524', 900:'#1c1917' },
-  neutral: { 50:'#fafafa', 100:'#f5f5f5', 200:'#e5e5e5', 300:'#d4d4d4', 400:'#a3a3a3', 500:'#737373', 600:'#525252', 700:'#404040', 800:'#262626', 900:'#171717' },
-  zinc:    { 50:'#fafafa', 100:'#f4f4f5', 200:'#e4e4e7', 300:'#d4d4d8', 400:'#a1a1aa', 500:'#71717a', 600:'#52525b', 700:'#3f3f46', 800:'#27272a', 900:'#18181b' },
-  gray:    { 50:'#f9fafb', 100:'#f3f4f6', 200:'#e5e7eb', 300:'#d1d5db', 400:'#9ca3af', 500:'#6b7280', 600:'#4b5563', 700:'#374151', 800:'#1f2937', 900:'#111827' },
-  slate:   { 50:'#f8fafc', 100:'#f1f5f9', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#475569', 700:'#334155', 800:'#1e293b', 900:'#0f172a' },
+  primary: { 50:'#e8eff9', 100:'#e8eff9', 200:'#c6d6eb', 300:'#9bb6d6', 400:'#6690c0', 500:'#3a6ba5', 600:'#1d5090', 700:'#003879', 800:'#002c5f', 900:'#001e42' },
+  gray:    { 50:'#fbfbfb', 100:'#f5f5f5', 200:'#e4e4e4', 300:'#cccccc', 400:'#aaaaaa', 500:'#888888', 600:'#666666', 700:'#444444', 800:'#222222', 900:'#111111' },
+  slate:   { 50:'#f8f9fb', 100:'#f1f2f5', 200:'#e1e5ea', 300:'#d3d6e1', 400:'#b1b6cb', 500:'#9198b3', 600:'#656e95', 700:'#4c5476', 800:'#353b55', 900:'#222739' },
+  blue:    { 50:'#f8f9ff', 100:'#ecf1ff', 200:'#e6ecff', 300:'#cfdaff', 400:'#a8c1ff', 500:'#82a3ff', 600:'#376cfb', 700:'#2854d2', 800:'#1d3ea6', 900:'#142b78' },
+  sky:     { 50:'#edf6ff', 100:'#e3f2fd', 200:'#bfdfff', 300:'#94caff', 400:'#63aef5', 500:'#3b93e8', 600:'#2178ce', 700:'#155fa8', 800:'#0d4780', 900:'#083055' },
+  red:     { 50:'#ffebeb', 100:'#ffd4d4', 200:'#ffbcbc', 300:'#ffa3a3', 400:'#ff6b6b', 500:'#ff2828', 600:'#e51b1b', 700:'#c21414', 800:'#9b0f0f', 900:'#700b0b' },
+  orange:  { 50:'#fff4e5', 100:'#ffe4c2', 200:'#ffce94', 300:'#ffb35c', 400:'#ff9c2e', 500:'#ff8500', 600:'#e06f00', 700:'#b85a00', 800:'#8f4600', 900:'#663200' },
+  green:   { 50:'#ecf9f3', 100:'#d4f2e3', 200:'#a8e6c7', 300:'#79d0a1', 400:'#51cd8f', 500:'#33c481', 600:'#27a566', 700:'#1d8652', 800:'#15663e', 900:'#0e492c' },
+  mint:    { 50:'#e3fffd', 100:'#c9f7f3', 200:'#a3ede7', 300:'#75ded6', 400:'#41c9c0', 500:'#1fb2a9', 600:'#159690', 700:'#0f7a75', 800:'#0a5d59', 900:'#06423f' },
+};
+
+// 피그마 각 셀 하단의 사용처 캡션 ("new" = 아직 미사용, 그 외는 실제 사용되는 토큰/위치명)
+const TAILWIND_TAGS: Partial<Record<PaletteKey, Partial<Record<Shade, string>>>> = {
+  gray:   { 50:'일반이체 bg', 100:'new', 200:'$border2', 300:'$border3', 400:'$icoColor', 500:'$black3', 600:'$black6', 700:'$black4', 800:'$default', 900:'$black1' },
+  slate:  { 50:'new', 100:'$bg', 200:'$border', 300:'grid-bg5', 400:'new', 500:'grid-bg6', 600:'grid-bg7', 700:'new', 800:'new', 900:'new' },
+  blue:   { 50:'grid-bg10', 100:'grid-bg9', 200:'$blue2', 300:'new', 400:'new', 500:'$blue', 600:'$primary2', 700:'new', 800:'new', 900:'new' },
+  sky:    { 50:'$hover', 100:'.cell-proc-qty', 200:'$active', 300:'new', 400:'new', 500:'new', 600:'$primary2', 700:'new', 800:'new', 900:'new' },
+  red:    { 50:'grid-bg13', 100:'new', 200:'$red2 · grid-bg1', 300:'grid-bg12', 400:'new', 500:'$red', 600:'new', 700:'new', 800:'new', 900:'new' },
+  orange: { 50:'new', 100:'new', 200:'new', 300:'new', 400:'new', 500:'로고', 600:'new', 700:'new', 800:'new', 900:'new' },
+  green:  { 50:'new', 100:'new', 200:'new', 300:'grid-bg3', 400:'new', 500:'$green', 600:'new', 700:'new', 800:'new', 900:'new' },
+  mint:   { 50:'grid-bg8', 100:'new', 200:'new', 300:'new', 400:'new', 500:'new', 600:'new', 700:'new', 800:'new', 900:'new' },
 };
 
 function makePalette(key: PaletteKey): Palette {
   const base = PALETTE_DEFAULTS[key];
   const preset = TAILWIND_SCALES[key];
-  return { base, scale: preset ?? generateScale(base) };
+  const tags = TAILWIND_TAGS[key];
+  return { base, scale: preset ?? generateScale(base), ...(tags ? { tags } : {}) };
 }
 
 const DEFAULT_SEMANTIC_LIST: SemanticItem[] = [
-  { id: 'primary',   label: 'Primary',   emoji: '🔵', base: '#3b82f6', scale: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' } },
+  { id: 'primary',   label: 'Primary',   emoji: '🔵', base: '#003879', scale: { 50:'#e8eff9', 100:'#e8eff9', 200:'#c6d6eb', 300:'#9bb6d6', 400:'#6690c0', 500:'#3a6ba5', 600:'#1d5090', 700:'#003879', 800:'#002c5f', 900:'#001e42' } },
   { id: 'secondary', label: 'Secondary', emoji: '🟣', base: '#8b5cf6', scale: { 50:'#f5f3ff', 100:'#ede9fe', 200:'#ddd6fe', 300:'#c4b5fd', 400:'#a78bfa', 500:'#8b5cf6', 600:'#7c3aed', 700:'#6d28d9', 800:'#5b21b6', 900:'#4c1d95' } },
   { id: 'info',      label: 'Info',      emoji: 'ℹ️', base: '#0ea5e9', scale: { 50:'#f0f9ff', 100:'#e0f2fe', 200:'#bae6fd', 300:'#7dd3fc', 400:'#38bdf8', 500:'#0ea5e9', 600:'#0284c7', 700:'#0369a1', 800:'#075985', 900:'#0c4a6e' } },
   { id: 'success',   label: 'Success',   emoji: '✅', base: '#10b981', scale: { 50:'#ecfdf5', 100:'#d1fae5', 200:'#a7f3d0', 300:'#6ee7b7', 400:'#34d399', 500:'#10b981', 600:'#059669', 700:'#047857', 800:'#065f46', 900:'#064e3b' } },
@@ -78,41 +65,17 @@ const DEFAULT_SEMANTIC_LIST: SemanticItem[] = [
   { id: 'warning',   label: 'Warning',   emoji: '⚠️', base: '#f59e0b', scale: { 50:'#fffbeb', 100:'#fef3c7', 200:'#fde68a', 300:'#fcd34d', 400:'#fbbf24', 500:'#f59e0b', 600:'#d97706', 700:'#b45309', 800:'#92400e', 900:'#78350f' } },
 ];
 
-const DEFAULT_BG_GROUP: GroupColor[] = [
-  { label: 'BG 1', hex: '#ffffff' },
-  { label: 'BG 2', hex: '#f8fafc' },
-];
-
-const DEFAULT_BORDER_GROUP: GroupColor[] = [
-  { label: 'Border 1', hex: '#e2e8f0' },
-  { label: 'Border 2', hex: '#94a3b8' },
-];
-
 const DEFAULT_BASE_COLOR_LIST: BaseColorItem[] = [
-  { key: 'white',   label: 'White'   },
-  { key: 'black',   label: 'Black'   },
-  { key: 'rose',    label: 'Rose'    },
-  { key: 'pink',    label: 'Pink'    },
-  { key: 'fuchsia', label: 'Fuchsia' },
-  { key: 'purple',  label: 'Purple'  },
-  { key: 'violet',  label: 'Violet'  },
-  { key: 'indigo',  label: 'Indigo'  },
-  { key: 'blue',    label: 'Blue'    },
-  { key: 'sky',     label: 'Sky'     },
-  { key: 'cyan',    label: 'Cyan'    },
-  { key: 'teal',    label: 'Teal'    },
-  { key: 'emerald', label: 'Emerald' },
-  { key: 'green',   label: 'Green'   },
-  { key: 'lime',    label: 'Lime'    },
-  { key: 'yellow',  label: 'Yellow'  },
-  { key: 'amber',   label: 'Amber'   },
-  { key: 'orange',  label: 'Orange'  },
-  { key: 'red',     label: 'Red'     },
-  { key: 'stone',   label: 'Stone'   },
-  { key: 'neutral', label: 'Neutral' },
-  { key: 'zinc',    label: 'Zinc'    },
-  { key: 'gray',    label: 'Gray'    },
-  { key: 'slate',   label: 'Slate'   },
+  { key: 'white',  label: 'White'  },
+  { key: 'black',  label: 'Black'  },
+  { key: 'gray',   label: 'Gray'   },
+  { key: 'slate',  label: 'Slate'  },
+  { key: 'blue',   label: 'Blue'   },
+  { key: 'sky',    label: 'Sky'    },
+  { key: 'red',    label: 'Red'    },
+  { key: 'orange', label: 'Orange' },
+  { key: 'green',  label: 'Green'  },
+  { key: 'mint',   label: 'Mint'   },
 ];
 
 const defaultComponents = {
@@ -215,13 +178,9 @@ const defaultComponents = {
   divider:    { height: 1,         color: 'gray' as PaletteKey, colorShade: 200 as Shade },
 };
 
-type GroupType = 'bg' | 'border';
-
 interface DSStore {
   semanticList: SemanticItem[];
   palettes: Record<PaletteKey, Palette>;
-  bgGroup: GroupColor[];
-  borderGroup: GroupColor[];
   baseColorList: BaseColorItem[];
   components: typeof defaultComponents;
 
@@ -243,12 +202,6 @@ interface DSStore {
   addBaseColor: () => void;
   removeBaseColor: (key: string) => void;
   resetBaseColors: () => void;
-
-  // BG / Border 그룹 액션
-  setGroupColor: (group: GroupType, idx: number, hex: string) => void;
-  setGroupLabel: (group: GroupType, idx: number, label: string) => void;
-  addGroupColor: (group: GroupType) => void;
-  removeGroupColor: (group: GroupType, idx: number) => void;
 
   updateComponent: (compKey: string, patch: Record<string, unknown>) => void;
   getColor: (palKey: PaletteKey | null | undefined, shade: Shade) => string;
@@ -273,8 +226,6 @@ interface FullPresetData {
   preset?: { id?: string; name?: string };
   palettes?: Record<string, Record<string, string>>;
   semanticList?: SemanticItem[];
-  bgGroup?: GroupColor[];
-  borderGroup?: GroupColor[];
   baseColorList?: BaseColorItem[];
   components?: Record<string, unknown>;
   pluginComponents?: Record<string, unknown>;
@@ -301,8 +252,6 @@ export const useDS = create<DSStore>()(
     (set, get) => ({
       semanticList: DEFAULT_SEMANTIC_LIST,
       palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
-      bgGroup: DEFAULT_BG_GROUP,
-      borderGroup: DEFAULT_BORDER_GROUP,
       baseColorList: DEFAULT_BASE_COLOR_LIST,
       components: defaultComponents,
 
@@ -423,37 +372,6 @@ export const useDS = create<DSStore>()(
           };
         }),
 
-      setGroupColor: (group, idx, hex) =>
-        set((s) => ({
-          [`${group}Group`]: s[`${group}Group`].map((c, i) => i === idx ? { ...c, hex } : c),
-        })),
-
-      setGroupLabel: (group, idx, label) =>
-        set((s) => ({
-          [`${group}Group`]: s[`${group}Group`].map((c, i) => i === idx ? { ...c, label } : c),
-        })),
-
-      addGroupColor: (group) =>
-        set((s) => {
-          const arr = s[`${group}Group`];
-          const n = arr.length + 1;
-          return {
-            [`${group}Group`]: [...arr, { label: `${group === 'bg' ? 'BG' : 'Border'} ${n}`, hex: group === 'bg' ? '#ffffff' : '#e2e8f0' }],
-          };
-        }),
-
-      removeGroupColor: (group, idx) =>
-        set((s) => {
-          const prefix = group === 'bg' ? 'BG' : 'Border';
-          const filtered = s[`${group}Group`].filter((_, i) => i !== idx);
-          // 번호 패턴("BG N", "Border N")인 항목은 순서대로 재번호
-          const renumbered = filtered.map((c, i) => ({
-            ...c,
-            label: /^(BG|Border) \d+$/.test(c.label) ? `${prefix} ${i + 1}` : c.label,
-          }));
-          return { [`${group}Group`]: renumbered };
-        }),
-
       updateComponent: (compKey, patch) =>
         set((s) => ({
           components: { ...s.components, [compKey]: { ...(s.components as Record<string, unknown>)[compKey] as object, ...patch } },
@@ -480,8 +398,6 @@ export const useDS = create<DSStore>()(
             preset: { id, name, createdAt },
             palettes, components,
             semanticList: s.semanticList,
-            bgGroup: s.bgGroup,
-            borderGroup: s.borderGroup,
             baseColorList: s.baseColorList,
           }),
         }).catch(() => {});
@@ -511,8 +427,6 @@ export const useDS = create<DSStore>()(
         set({
           semanticList: JSON.parse(JSON.stringify(DEFAULT_SEMANTIC_LIST)),
           palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
-          bgGroup: JSON.parse(JSON.stringify(DEFAULT_BG_GROUP)),
-          borderGroup: JSON.parse(JSON.stringify(DEFAULT_BORDER_GROUP)),
           baseColorList: JSON.parse(JSON.stringify(DEFAULT_BASE_COLOR_LIST)),
           components: JSON.parse(JSON.stringify(defaultComponents)),
           currentSetId: null,
@@ -543,8 +457,6 @@ export const useDS = create<DSStore>()(
               scale: { ...generateScale(item.base), ...item.scale },
             }));
           }
-          if (data.bgGroup) next.bgGroup = data.bgGroup;
-          if (data.borderGroup) next.borderGroup = data.borderGroup;
           if (data.baseColorList) next.baseColorList = data.baseColorList;
           const comps = data.pluginComponents ?? data.components;
           if (comps) next.components = normalizeComponents(comps as Record<string, unknown>);
@@ -576,8 +488,6 @@ export const useDS = create<DSStore>()(
             preset: { id, name: nm, createdAt, updatedAt: createdAt },
             palettes, components,
             semanticList: s.semanticList,
-            bgGroup: s.bgGroup,
-            borderGroup: s.borderGroup,
             baseColorList: s.baseColorList,
           }),
         }).catch(() => {});
@@ -592,14 +502,13 @@ export const useDS = create<DSStore>()(
       exportJSON: () => ({
         semanticList: get().semanticList,
         palettes: get().palettes,
-        bgGroup: get().bgGroup,
-        borderGroup: get().borderGroup,
         baseColorList: get().baseColorList,
         components: get().components,
       }),
     }),
     {
-      name: 'design-yu-store-v29',
+      // v29 -> v30: 파로스/스텔라 컬러 시스템으로 베이스 컬러 전면 교체(불필요 키 삭제, BG/Border 그룹 제거) — 예전 저장값과 구조가 달라 새 버전 키로 분리
+      name: 'design-yu-store-v30',
       // 저장된 상태를 불러올 때 컴포넌트를 기본 구조 위에 병합 — 과거에 깨진(tab.styles, 50 shade 누락 등) 데이터 복구
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<DSStore>;
@@ -607,7 +516,11 @@ export const useDS = create<DSStore>()(
           ? (Object.fromEntries(
               Object.entries(p.palettes).map(([k, pal]) => [
                 k,
-                { base: pal.base, scale: { ...generateScale(pal.base), ...pal.scale } },
+                {
+                  base: pal.base,
+                  scale: { ...generateScale(pal.base), ...pal.scale },
+                  ...(pal.tags ?? current.palettes[k]?.tags ? { tags: pal.tags ?? current.palettes[k]?.tags } : {}),
+                },
               ])
             ) as Record<PaletteKey, Palette>)
           : current.palettes;

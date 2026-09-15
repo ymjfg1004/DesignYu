@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDS } from '@/lib/store';
 import { isValidHex, getContrastColor } from '@/lib/colorUtils';
-import type { PaletteKey, Shade, GroupColor, SemanticItem } from '@/lib/types';
+import type { PaletteKey, Shade, SemanticItem } from '@/lib/types';
 
 const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
@@ -11,14 +11,17 @@ const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 function SwatchCell({
   color,
   shade,
+  tag,
   onChange,
 }: {
   color: string;
   shade: Shade;
+  tag?: string;
   onChange: (hex: string) => void;
 }) {
   const [draft, setDraft] = useState(color.replace('#', ''));
   const textColor = getContrastColor(color);
+  const isUnused = !tag || tag === 'new';
 
   // 외부(색상 피커 등)에서 color가 바뀌면 draft도 동기화
   useEffect(() => {
@@ -59,6 +62,15 @@ function SwatchCell({
         className="w-full font-mono text-gray-600 border border-gray-200 rounded px-1 py-1.5 focus:outline-none focus:border-blue-400 text-center bg-white hover:border-gray-300 transition-colors"
         style={{ fontSize: 14 }}
       />
+      {tag && (
+        <p
+          title={tag}
+          className={`text-center truncate leading-none ${isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'}`}
+          style={{ fontSize: 9 }}
+        >
+          {tag}
+        </p>
+      )}
     </div>
   );
 }
@@ -66,9 +78,11 @@ function SwatchCell({
 /* ── 공통 스워치 그리드 ───────────────────────────────── */
 function SwatchGrid({
   scale,
+  tags,
   onSwatchChange,
 }: {
   scale: Record<Shade, string>;
+  tags?: Partial<Record<Shade, string>>;
   onSwatchChange: (shade: Shade, hex: string) => void;
 }) {
   return (
@@ -78,6 +92,7 @@ function SwatchGrid({
           key={shade}
           color={scale[shade]}
           shade={shade}
+          tag={tags?.[shade]}
           onChange={(hex) => onSwatchChange(shade, hex)}
         />
       ))}
@@ -233,104 +248,9 @@ function PaletteCard({
       </div>
       {!isSingle && (
         <div className="mt-3">
-          <SwatchGrid scale={pal.scale} onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)} />
+          <SwatchGrid scale={pal.scale} tags={pal.tags} onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)} />
         </div>
       )}
-    </div>
-  );
-}
-
-/* ── BG / Border 단일 컬러칩 ─────────────────────────── */
-function GroupChip({
-  item,
-  idx,
-  group,
-  canRemove,
-}: {
-  item: GroupColor;
-  idx: number;
-  group: 'bg' | 'border';
-  canRemove: boolean;
-}) {
-  const { setGroupColor, setGroupLabel, removeGroupColor } = useDS();
-  const [draft, setDraft] = useState(item.hex.replace('#', ''));
-  const textColor = getContrastColor(item.hex);
-
-  useEffect(() => { setDraft(item.hex.replace('#', '')); }, [item.hex]);
-
-  return (
-    <div className="flex flex-col gap-1 w-28 group/chip">
-      {/* 컬러 박스 + 삭제 버튼 */}
-      <div className="relative">
-        {/* 색상 피커 영역 */}
-        <div
-          className="w-full rounded-lg border border-black/10 cursor-pointer"
-          style={{ background: item.hex, height: 56 }}
-        />
-        <input
-          type="color"
-          value={item.hex}
-          onChange={(e) => setGroupColor(group, idx, e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        {/* 삭제 버튼 — color input 위에 z-10으로 올려서 클릭 가능 */}
-        {canRemove && (
-          <button
-            onClick={() => removeGroupColor(group, idx)}
-            className="absolute top-1 right-1 z-10 w-5 h-5 flex items-center justify-center rounded-full bg-black/20 hover:bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/chip:opacity-100 transition-opacity"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-      {/* 이름 */}
-      <input
-        type="text"
-        value={item.label}
-        onChange={(e) => setGroupLabel(group, idx, e.target.value)}
-        className="w-full text-xs font-semibold text-gray-700 border-0 bg-transparent focus:outline-none p-0 text-center"
-        placeholder="이름"
-      />
-      {/* Hex 입력 */}
-      <input
-        type="text"
-        value={draft}
-        maxLength={6}
-        onChange={(e) => {
-          const raw = e.target.value.replace('#', '');
-          setDraft(raw);
-          if (raw.length === 6 && isValidHex(`#${raw}`)) setGroupColor(group, idx, `#${raw}`);
-        }}
-        onBlur={() => { if (!isValidHex(`#${draft}`)) setDraft(item.hex.replace('#', '')); }}
-        className="w-full font-mono text-gray-600 border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400 text-center bg-white hover:border-gray-300 transition-colors"
-        style={{ fontSize: 12 }}
-      />
-    </div>
-  );
-}
-
-/* ── BG / Border 그룹 섹션 ───────────────────────────── */
-function GroupSection({ group, title, desc }: { group: 'bg' | 'border'; title: string; desc: string }) {
-  const store = useDS();
-  const items = store[`${group}Group`];
-
-  return (
-    <div className="mb-10">
-      <SectionHeader title={title} desc={desc}>
-        <button
-          onClick={() => store.addGroupColor(group)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-        >
-          + 추가
-        </button>
-      </SectionHeader>
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex flex-wrap gap-4">
-          {items.map((item, idx) => (
-            <GroupChip key={idx} item={item} idx={idx} group={group} canRemove={items.length > 1} />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -390,10 +310,6 @@ export default function ColorsPage() {
               </div>
             </div>
 
-            {/* ── BG / Border ── */}
-            <GroupSection group="bg"     title="BG"     desc="배경 색상 — 페이지, 카드, 인터랙션 영역 등" />
-            <GroupSection group="border" title="Border" desc="테두리 색상 — 인풋, 카드, 구분선 등" />
-
             {/* ── 상태 컬러 (fixed bottom) ── */}
             <div className="mb-10">
               <div className="flex items-center gap-2 mb-4">
@@ -410,7 +326,7 @@ export default function ColorsPage() {
 
       {/* ── 베이스 컬러 ──────────────────────────────── */}
       <div>
-        <SectionHeader title="베이스 컬러" desc="Tailwind 기반 전체 컬러 팔레트">
+        <SectionHeader title="베이스 컬러" desc="파로스/스텔라 컬러 시스템 — 헥사값 아래 작은 글씨는 피그마 실사용 태그(예: $bg, $border2)">
           <div className="flex items-center gap-2">
             <button
               onClick={resetBaseColors}

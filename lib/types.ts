@@ -4,12 +4,8 @@ export type ColorScale = Record<Shade, string>;
 export interface Palette {
   base: string;
   scale: ColorScale;
-}
-
-// bg / border 그룹의 단일 컬러칩
-export interface GroupColor {
-  label: string;
-  hex: string;
+  // 피그마 원본의 셀별 사용처 태그 (예: "new", "$primary", "$border2", "grid-bg1")
+  tags?: Partial<Record<Shade, string>>;
 }
 
 // 동적 시맨틱 컬러 항목
@@ -24,13 +20,10 @@ export interface SemanticItem {
 // Semantic tokens (컴포넌트 설정에서 사용)
 export type SemanticKey = 'primary' | 'secondary' | 'info' | 'success' | 'error' | 'warning';
 
-// Base color palettes (Tailwind-style)
+// Base color palettes (파로스/스텔라 컬러 시스템 — Figma 기준)
 export type BaseColorKey =
   | 'white' | 'black'
-  | 'rose' | 'pink' | 'fuchsia' | 'purple' | 'violet' | 'indigo'
-  | 'blue' | 'sky' | 'cyan' | 'teal' | 'emerald' | 'green' | 'lime'
-  | 'yellow' | 'amber' | 'orange' | 'red'
-  | 'stone' | 'neutral' | 'zinc' | 'gray' | 'slate';
+  | 'gray' | 'slate' | 'blue' | 'sky' | 'red' | 'orange' | 'green' | 'mint';
 
 // (string & {})는 리터럴 자동완성은 유지하면서 커스텀 베이스 컬러 키(예: 'custom-172...')도 허용
 export type PaletteKey = SemanticKey | BaseColorKey | (string & {});
@@ -154,8 +147,6 @@ export type ComponentSettings = ButtonSettings | InputSettings | SelectSettings 
 export interface DesignSystemData {
   semanticList: SemanticItem[];
   palettes: Record<PaletteKey, Palette>;
-  bgGroup: GroupColor[];
-  borderGroup: GroupColor[];
   baseColorList: BaseColorItem[];
   components: Record<string, ComponentSettings>;
 }

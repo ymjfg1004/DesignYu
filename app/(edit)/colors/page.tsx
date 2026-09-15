@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDS } from '@/lib/store';
 import { isValidHex, getContrastColor } from '@/lib/colorUtils';
-import type { PaletteKey, Shade, SemanticItem } from '@/lib/types';
+import type { PaletteKey, Shade, SemanticItem, ExtraShade } from '@/lib/types';
 
 const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
 
@@ -91,30 +91,162 @@ function SwatchCell({
   );
 }
 
+/* ── 커스텀 단계 칩 (예: 350) — 라벨 숫자를 직접 입력 ── */
+function ExtraSwatchCell({
+  extra,
+  onColorChange,
+  onLabelChange,
+  onTagChange,
+  onRemove,
+}: {
+  extra: ExtraShade;
+  onColorChange: (hex: string) => void;
+  onLabelChange: (label: string) => void;
+  onTagChange: (tag: string) => void;
+  onRemove: () => void;
+}) {
+  const [draft, setDraft] = useState(extra.hex.replace('#', ''));
+  const textColor = getContrastColor(extra.hex);
+  const isUnused = !extra.tag || extra.tag === 'new';
+
+  useEffect(() => {
+    setDraft(extra.hex.replace('#', ''));
+  }, [extra.hex]);
+
+  return (
+    <div className="flex flex-col gap-1 group/extra">
+      <div className="relative group">
+        <div
+          className="w-full rounded-md border border-dashed border-blue-300 cursor-pointer flex flex-col items-center justify-end pb-1"
+          style={{ background: extra.hex, height: 40 }}
+        >
+          <span className="text-[9px] font-bold leading-none" style={{ color: textColor }}>
+            {extra.label || '?'}
+          </span>
+        </div>
+        <input
+          type="color"
+          value={extra.hex}
+          onChange={(e) => onColorChange(e.target.value)}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+        <button
+          onClick={onRemove}
+          title="이 단계 삭제"
+          className="absolute -top-1.5 -right-1.5 z-10 w-4 h-4 flex items-center justify-center rounded-full bg-gray-400 hover:bg-red-500 text-white text-[9px] font-bold opacity-0 group-hover/extra:opacity-100 transition-opacity"
+        >
+          ✕
+        </button>
+      </div>
+      <input
+        type="text"
+        value={extra.label}
+        maxLength={4}
+        placeholder="숫자"
+        onChange={(e) => onLabelChange(e.target.value)}
+        className="w-full font-mono text-blue-600 border border-blue-200 rounded px-1 py-1.5 focus:outline-none focus:border-blue-400 text-center bg-blue-50 hover:border-blue-300 transition-colors"
+        style={{ fontSize: 14 }}
+      />
+      <input
+        type="text"
+        value={draft}
+        maxLength={6}
+        onChange={(e) => {
+          const raw = e.target.value.replace('#', '');
+          setDraft(raw);
+          if (raw.length === 6 && isValidHex(`#${raw}`)) onColorChange(`#${raw}`);
+        }}
+        onBlur={() => { if (!isValidHex(`#${draft}`)) setDraft(extra.hex.replace('#', '')); }}
+        className="w-full font-mono text-gray-600 border border-gray-200 rounded px-1 py-1.5 focus:outline-none focus:border-blue-400 text-center bg-white hover:border-gray-300 transition-colors"
+        style={{ fontSize: 14 }}
+      />
+      <input
+        type="text"
+        value={extra.tag ?? ''}
+        onChange={(e) => onTagChange(e.target.value)}
+        placeholder="설명"
+        title={extra.tag}
+        className={`w-full text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-0.5 leading-tight placeholder:text-gray-200 ${
+          isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'
+        }`}
+        style={{ fontSize: 10 }}
+      />
+    </div>
+  );
+}
+
 /* ── 공통 스워치 그리드 ───────────────────────────────── */
 function SwatchGrid({
   scale,
   tags,
+  extraShades,
   onSwatchChange,
   onTagChange,
+  onAddExtra,
+  onExtraColorChange,
+  onExtraLabelChange,
+  onExtraTagChange,
+  onExtraRemove,
 }: {
   scale: Record<Shade, string>;
   tags?: Partial<Record<Shade, string>>;
+  extraShades?: ExtraShade[];
   onSwatchChange: (shade: Shade, hex: string) => void;
   onTagChange?: (shade: Shade, tag: string) => void;
+  onAddExtra?: () => void;
+  onExtraColorChange?: (id: string, hex: string) => void;
+  onExtraLabelChange?: (id: string, label: string) => void;
+  onExtraTagChange?: (id: string, tag: string) => void;
+  onExtraRemove?: (id: string) => void;
 }) {
-  return (
-    <div className="grid grid-cols-10 gap-1.5">
-      {SHADES.map((shade) => (
-        <SwatchCell
-          key={shade}
-          color={scale[shade]}
-          shade={shade}
-          tag={tags?.[shade]}
-          onChange={(hex) => onSwatchChange(shade, hex)}
-          onTagChange={onTagChange ? (tag) => onTagChange(shade, tag) : undefined}
+  // 고정 50~900 단계와 커스텀 단계를 라벨 숫자 기준으로 정렬해 한 줄에 표시
+  type Cell = { key: string; sortKey: number; render: () => React.ReactNode };
+  const cells: Cell[] = SHADES.map((shade) => ({
+    key: `shade-${shade}`,
+    sortKey: shade,
+    render: () => (
+      <SwatchCell
+        color={scale[shade]}
+        shade={shade}
+        tag={tags?.[shade]}
+        onChange={(hex) => onSwatchChange(shade, hex)}
+        onTagChange={onTagChange ? (tag) => onTagChange(shade, tag) : undefined}
+      />
+    ),
+  }));
+  (extraShades ?? []).forEach((extra) => {
+    const n = parseInt(extra.label, 10);
+    cells.push({
+      key: extra.id,
+      sortKey: Number.isFinite(n) ? n : 9999,
+      render: () => (
+        <ExtraSwatchCell
+          extra={extra}
+          onColorChange={(hex) => onExtraColorChange?.(extra.id, hex)}
+          onLabelChange={(label) => onExtraLabelChange?.(extra.id, label)}
+          onTagChange={(tag) => onExtraTagChange?.(extra.id, tag)}
+          onRemove={() => onExtraRemove?.(extra.id)}
         />
-      ))}
+      ),
+    });
+  });
+  cells.sort((a, b) => a.sortKey - b.sortKey);
+
+  return (
+    <div
+      className="grid gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${cells.length + (onAddExtra ? 1 : 0)}, minmax(0, 1fr))` }}
+    >
+      {cells.map((c) => <div key={c.key}>{c.render()}</div>)}
+      {onAddExtra && (
+        <button
+          onClick={onAddExtra}
+          title="50~900 사이에 커스텀 단계 추가 (예: 350)"
+          className="h-full min-h-[40px] flex items-center justify-center rounded-md border border-dashed border-gray-300 text-gray-300 hover:text-blue-500 hover:border-blue-300 transition-colors text-lg"
+        >
+          +
+        </button>
+      )}
     </div>
   );
 }
@@ -133,8 +265,12 @@ function SemanticCard({
   canDrag: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
-  const { palettes, setSemanticBase, setSemanticSwatch, setSwatchTag, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic } = useDS();
+  const {
+    palettes, setSemanticBase, setSemanticSwatch, setSwatchTag, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic,
+    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag,
+  } = useDS();
   const tags = palettes[item.id]?.tags;
+  const extraShades = palettes[item.id]?.extraShades;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow group/sem">
@@ -200,8 +336,14 @@ function SemanticCard({
       <SwatchGrid
         scale={item.scale}
         tags={tags}
+        extraShades={extraShades}
         onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)}
         onTagChange={(sh, tag) => setSwatchTag(item.id, sh, tag)}
+        onAddExtra={() => addExtraShade(item.id)}
+        onExtraColorChange={(id, hex) => setExtraShadeColor(item.id, id, hex)}
+        onExtraLabelChange={(id, label) => setExtraShadeLabel(item.id, id, label)}
+        onExtraTagChange={(id, tag) => setExtraShadeTag(item.id, id, tag)}
+        onExtraRemove={(id) => removeExtraShade(item.id, id)}
       />
     </div>
   );
@@ -221,7 +363,10 @@ function PaletteCard({
   canRemove: boolean;
   onRemove: () => void;
 }) {
-  const { palettes, setBase, setSwatchColor, setSwatchTag, autoGenerate, setBaseLabel } = useDS();
+  const {
+    palettes, setBase, setSwatchColor, setSwatchTag, autoGenerate, setBaseLabel,
+    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag,
+  } = useDS();
   const [draft, setDraft] = useState('');
   const pal = palettes[palKey];
   if (!pal) return null;
@@ -283,8 +428,14 @@ function PaletteCard({
           <SwatchGrid
             scale={pal.scale}
             tags={pal.tags}
+            extraShades={pal.extraShades}
             onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)}
             onTagChange={(sh, tag) => setSwatchTag(palKey, sh, tag)}
+            onAddExtra={() => addExtraShade(palKey)}
+            onExtraColorChange={(id, hex) => setExtraShadeColor(palKey, id, hex)}
+            onExtraLabelChange={(id, label) => setExtraShadeLabel(palKey, id, label)}
+            onExtraTagChange={(id, tag) => setExtraShadeTag(palKey, id, tag)}
+            onExtraRemove={(id) => removeExtraShade(palKey, id)}
           />
         </div>
       )}

@@ -104,9 +104,6 @@ export function Sidebar() {
         {/* Top nav */}
         <div className="mb-3">
           {navLink('/colors', '컬러 시스템', '🎨')}
-          {navLink('/icons', '아이콘', '✦')}
-          {navLink('/lucide', 'Lucide Icons', '◈')}
-          {navLink('/export', 'JSON 내보내기', '📦')}
           {navLink('/presets', `프리셋 목록${presets.length > 0 ? ` (${presets.length})` : ''}`, '🗂')}
         </div>
 

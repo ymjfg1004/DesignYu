@@ -32,7 +32,14 @@ export type BaseColorKey =
   | 'yellow' | 'amber' | 'orange' | 'red'
   | 'stone' | 'neutral' | 'zinc' | 'gray' | 'slate';
 
-export type PaletteKey = SemanticKey | BaseColorKey;
+// (string & {})는 리터럴 자동완성은 유지하면서 커스텀 베이스 컬러 키(예: 'custom-172...')도 허용
+export type PaletteKey = SemanticKey | BaseColorKey | (string & {});
+
+// 베이스 컬러 목록의 한 줄(순서 + 표시 이름) — 팔레트 데이터 자체는 palettes[key]에 저장
+export interface BaseColorItem {
+  key: string;
+  label: string;
+}
 
 export interface ButtonStateColors {
   bgColor: PaletteKey | null; bgShade: Shade; bgOpacity: number;
@@ -149,5 +156,6 @@ export interface DesignSystemData {
   palettes: Record<PaletteKey, Palette>;
   bgGroup: GroupColor[];
   borderGroup: GroupColor[];
+  baseColorList: BaseColorItem[];
   components: Record<string, ComponentSettings>;
 }

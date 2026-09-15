@@ -3,36 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDS } from '@/lib/store';
 import { isValidHex, getContrastColor } from '@/lib/colorUtils';
-import type { PaletteKey, Shade, BaseColorKey, GroupColor, SemanticItem } from '@/lib/types';
+import type { PaletteKey, Shade, GroupColor, SemanticItem } from '@/lib/types';
 
 const SHADES: Shade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
-
-const BASE_DEFS: { key: BaseColorKey; label: string }[] = [
-  { key: 'white',   label: 'White'   },
-  { key: 'black',   label: 'Black'   },
-  { key: 'rose',    label: 'Rose'    },
-  { key: 'pink',    label: 'Pink'    },
-  { key: 'fuchsia', label: 'Fuchsia' },
-  { key: 'purple',  label: 'Purple'  },
-  { key: 'violet',  label: 'Violet'  },
-  { key: 'indigo',  label: 'Indigo'  },
-  { key: 'blue',    label: 'Blue'    },
-  { key: 'sky',     label: 'Sky'     },
-  { key: 'cyan',    label: 'Cyan'    },
-  { key: 'teal',    label: 'Teal'    },
-  { key: 'emerald', label: 'Emerald' },
-  { key: 'green',   label: 'Green'   },
-  { key: 'lime',    label: 'Lime'    },
-  { key: 'yellow',  label: 'Yellow'  },
-  { key: 'amber',   label: 'Amber'   },
-  { key: 'orange',  label: 'Orange'  },
-  { key: 'red',     label: 'Red'     },
-  { key: 'stone',   label: 'Stone'   },
-  { key: 'neutral', label: 'Neutral' },
-  { key: 'zinc',    label: 'Zinc'    },
-  { key: 'gray',    label: 'Gray'    },
-  { key: 'slate',   label: 'Slate'   },
-];
 
 /* ── 스워치 셀 (로컬 state로 타이핑 지원) ─────────────── */
 function SwatchCell({
@@ -197,8 +170,18 @@ function SemanticCard({
 const SINGLE_SWATCH_KEYS: PaletteKey[] = ['white', 'black'];
 
 /* ── 베이스 팔레트 카드 ───────────────────────────────── */
-function PaletteCard({ palKey, label }: { palKey: PaletteKey; label: string }) {
-  const { palettes, setBase, setSwatchColor, autoGenerate } = useDS();
+function PaletteCard({
+  palKey,
+  label,
+  canRemove,
+  onRemove,
+}: {
+  palKey: PaletteKey;
+  label: string;
+  canRemove: boolean;
+  onRemove: () => void;
+}) {
+  const { palettes, setBase, setSwatchColor, autoGenerate, setBaseLabel } = useDS();
   const [draft, setDraft] = useState('');
   const pal = palettes[palKey];
   if (!pal) return null;
@@ -208,7 +191,7 @@ function PaletteCard({ palKey, label }: { palKey: PaletteKey; label: string }) {
   useEffect(() => { setDraft(pal.base.replace('#', '')); }, [pal.base]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow group/pal">
       <div className="flex items-center gap-3">
         <div className="relative flex-shrink-0">
           <div className="w-7 h-7 rounded-lg border border-black/10 cursor-pointer" style={{ background: pal.base }} />
@@ -216,7 +199,12 @@ function PaletteCard({ palKey, label }: { palKey: PaletteKey; label: string }) {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-bold text-gray-800">{label}</span>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setBaseLabel(palKey, e.target.value)}
+            className="text-xs font-bold text-gray-800 border-0 bg-transparent focus:outline-none p-0 w-full"
+          />
           <input type="text" value={draft} maxLength={6}
             onChange={(e) => {
               const raw = e.target.value.replace('#', '');
@@ -231,6 +219,16 @@ function PaletteCard({ palKey, label }: { palKey: PaletteKey; label: string }) {
             className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0">
             자동생성
           </button>
+        )}
+        {canRemove ? (
+          <button
+            onClick={onRemove}
+            className="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-red-500 text-xs transition-colors flex-shrink-0 opacity-0 group-hover/pal:opacity-100"
+          >
+            ✕
+          </button>
+        ) : (
+          <div className="w-6 flex-shrink-0" />
         )}
       </div>
       {!isSingle && (
@@ -339,7 +337,7 @@ function GroupSection({ group, title, desc }: { group: 'bg' | 'border'; title: s
 
 /* ── 메인 페이지 ──────────────────────────────────────── */
 export default function ColorsPage() {
-  const { semanticList, addSemantic, reorderSemantic } = useDS();
+  const { semanticList, addSemantic, reorderSemantic, baseColorList, addBaseColor, removeBaseColor, resetBaseColors } = useDS();
   const dragId = useRef<string | null>(null);
 
   return (
@@ -412,10 +410,33 @@ export default function ColorsPage() {
 
       {/* ── 베이스 컬러 ──────────────────────────────── */}
       <div>
-        <SectionHeader title="베이스 컬러" desc="Tailwind 기반 전체 컬러 팔레트" />
+        <SectionHeader title="베이스 컬러" desc="Tailwind 기반 전체 컬러 팔레트">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={resetBaseColors}
+              title="추가·삭제한 내용을 초기 상태로 되돌립니다"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 6a4 4 0 1 1 .8 2.4" strokeLinecap="round"/><path d="M2 3v3h3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              초기화
+            </button>
+            <button
+              onClick={addBaseColor}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              + 추가
+            </button>
+          </div>
+        </SectionHeader>
         <div className="grid grid-cols-1 gap-3">
-          {BASE_DEFS.map(({ key, label }) => (
-            <PaletteCard key={key} palKey={key} label={label} />
+          {baseColorList.map(({ key, label }) => (
+            <PaletteCard
+              key={key}
+              palKey={key}
+              label={label}
+              canRemove={baseColorList.length > 1}
+              onRemove={() => removeBaseColor(key)}
+            />
           ))}
         </div>
       </div>

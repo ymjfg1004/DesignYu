@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateScale } from './colorUtils';
-import type { Palette, PaletteKey, Shade, GroupColor, SemanticItem, DesignSystemData, InputSet } from './types';
+import type { Palette, PaletteKey, Shade, GroupColor, SemanticItem, DesignSystemData, InputSet, BaseColorItem } from './types';
 
 const PALETTE_DEFAULTS: Record<PaletteKey, string> = {
   primary:   '#3b82f6',
@@ -86,6 +86,33 @@ const DEFAULT_BG_GROUP: GroupColor[] = [
 const DEFAULT_BORDER_GROUP: GroupColor[] = [
   { label: 'Border 1', hex: '#e2e8f0' },
   { label: 'Border 2', hex: '#94a3b8' },
+];
+
+const DEFAULT_BASE_COLOR_LIST: BaseColorItem[] = [
+  { key: 'white',   label: 'White'   },
+  { key: 'black',   label: 'Black'   },
+  { key: 'rose',    label: 'Rose'    },
+  { key: 'pink',    label: 'Pink'    },
+  { key: 'fuchsia', label: 'Fuchsia' },
+  { key: 'purple',  label: 'Purple'  },
+  { key: 'violet',  label: 'Violet'  },
+  { key: 'indigo',  label: 'Indigo'  },
+  { key: 'blue',    label: 'Blue'    },
+  { key: 'sky',     label: 'Sky'     },
+  { key: 'cyan',    label: 'Cyan'    },
+  { key: 'teal',    label: 'Teal'    },
+  { key: 'emerald', label: 'Emerald' },
+  { key: 'green',   label: 'Green'   },
+  { key: 'lime',    label: 'Lime'    },
+  { key: 'yellow',  label: 'Yellow'  },
+  { key: 'amber',   label: 'Amber'   },
+  { key: 'orange',  label: 'Orange'  },
+  { key: 'red',     label: 'Red'     },
+  { key: 'stone',   label: 'Stone'   },
+  { key: 'neutral', label: 'Neutral' },
+  { key: 'zinc',    label: 'Zinc'    },
+  { key: 'gray',    label: 'Gray'    },
+  { key: 'slate',   label: 'Slate'   },
 ];
 
 const defaultComponents = {
@@ -195,6 +222,7 @@ interface DSStore {
   palettes: Record<PaletteKey, Palette>;
   bgGroup: GroupColor[];
   borderGroup: GroupColor[];
+  baseColorList: BaseColorItem[];
   components: typeof defaultComponents;
 
   // 시맨틱 컬러 액션
@@ -211,6 +239,10 @@ interface DSStore {
   setBase: (key: PaletteKey, hex: string) => void;
   setSwatchColor: (key: PaletteKey, shade: Shade, hex: string) => void;
   autoGenerate: (key: PaletteKey) => void;
+  setBaseLabel: (key: string, label: string) => void;
+  addBaseColor: () => void;
+  removeBaseColor: (key: string) => void;
+  resetBaseColors: () => void;
 
   // BG / Border 그룹 액션
   setGroupColor: (group: GroupType, idx: number, hex: string) => void;
@@ -243,6 +275,7 @@ interface FullPresetData {
   semanticList?: SemanticItem[];
   bgGroup?: GroupColor[];
   borderGroup?: GroupColor[];
+  baseColorList?: BaseColorItem[];
   components?: Record<string, unknown>;
   pluginComponents?: Record<string, unknown>;
 }
@@ -270,6 +303,7 @@ export const useDS = create<DSStore>()(
       palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
       bgGroup: DEFAULT_BG_GROUP,
       borderGroup: DEFAULT_BORDER_GROUP,
+      baseColorList: DEFAULT_BASE_COLOR_LIST,
       components: defaultComponents,
 
       setSemanticBase: (id, hex) =>
@@ -348,6 +382,47 @@ export const useDS = create<DSStore>()(
           palettes: { ...s.palettes, [key]: { ...s.palettes[key], scale: generateScale(s.palettes[key].base) } },
         })),
 
+      setBaseLabel: (key, label) =>
+        set((s) => ({
+          baseColorList: s.baseColorList.map((b) => (b.key === key ? { ...b, label } : b)),
+        })),
+
+      addBaseColor: () =>
+        set((s) => {
+          let key = `custom-${Date.now()}`;
+          while (key in s.palettes) key = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+          const defaultHex = '#6366f1';
+          const n = s.baseColorList.length + 1;
+          return {
+            baseColorList: [...s.baseColorList, { key, label: `Custom ${n}` }],
+            palettes: { ...s.palettes, [key]: { base: defaultHex, scale: generateScale(defaultHex) } },
+          };
+        }),
+
+      removeBaseColor: (key) =>
+        set((s) => {
+          if (s.baseColorList.length <= 1) return s;
+          const nextPalettes = { ...s.palettes };
+          delete nextPalettes[key];
+          return {
+            baseColorList: s.baseColorList.filter((b) => b.key !== key),
+            palettes: nextPalettes,
+          };
+        }),
+
+      resetBaseColors: () =>
+        set((s) => {
+          const pals = { ...s.palettes };
+          // 커스텀으로 추가했던 베이스 컬러는 팔레트에서도 함께 제거
+          const defaultKeys = new Set(DEFAULT_BASE_COLOR_LIST.map((b) => b.key));
+          s.baseColorList.forEach((b) => { if (!defaultKeys.has(b.key)) delete pals[b.key]; });
+          DEFAULT_BASE_COLOR_LIST.forEach((b) => { pals[b.key] = makePalette(b.key); });
+          return {
+            baseColorList: JSON.parse(JSON.stringify(DEFAULT_BASE_COLOR_LIST)),
+            palettes: pals,
+          };
+        }),
+
       setGroupColor: (group, idx, hex) =>
         set((s) => ({
           [`${group}Group`]: s[`${group}Group`].map((c, i) => i === idx ? { ...c, hex } : c),
@@ -407,6 +482,7 @@ export const useDS = create<DSStore>()(
             semanticList: s.semanticList,
             bgGroup: s.bgGroup,
             borderGroup: s.borderGroup,
+            baseColorList: s.baseColorList,
           }),
         }).catch(() => {});
       },
@@ -437,6 +513,7 @@ export const useDS = create<DSStore>()(
           palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
           bgGroup: JSON.parse(JSON.stringify(DEFAULT_BG_GROUP)),
           borderGroup: JSON.parse(JSON.stringify(DEFAULT_BORDER_GROUP)),
+          baseColorList: JSON.parse(JSON.stringify(DEFAULT_BASE_COLOR_LIST)),
           components: JSON.parse(JSON.stringify(defaultComponents)),
           currentSetId: null,
           currentSetName: name,
@@ -451,11 +528,12 @@ export const useDS = create<DSStore>()(
           if (data.palettes) {
             const pals = { ...s.palettes };
             Object.entries(data.palettes).forEach(([k, scale]) => {
-              if (!(k in pals)) return;
               const sc = scale as Record<string, string>;
-              const base = sc['500'] ?? pals[k as PaletteKey].base;
+              // 커스텀 베이스 컬러처럼 현재 팔레트에 없는 키도 그대로 보존
+              const base = sc['500'] ?? pals[k]?.base ?? Object.values(sc)[0];
+              if (!base) return;
               // 과거(50 shade 추가 이전)에 저장된 프리셋은 일부 shade가 누락될 수 있어 생성값으로 보완
-              pals[k as PaletteKey] = { base, scale: { ...generateScale(base), ...sc } as Record<Shade, string> };
+              pals[k] = { base, scale: { ...generateScale(base), ...sc } as Record<Shade, string> };
             });
             next.palettes = pals;
           }
@@ -467,6 +545,7 @@ export const useDS = create<DSStore>()(
           }
           if (data.bgGroup) next.bgGroup = data.bgGroup;
           if (data.borderGroup) next.borderGroup = data.borderGroup;
+          if (data.baseColorList) next.baseColorList = data.baseColorList;
           const comps = data.pluginComponents ?? data.components;
           if (comps) next.components = normalizeComponents(comps as Record<string, unknown>);
           return next;
@@ -499,6 +578,7 @@ export const useDS = create<DSStore>()(
             semanticList: s.semanticList,
             bgGroup: s.bgGroup,
             borderGroup: s.borderGroup,
+            baseColorList: s.baseColorList,
           }),
         }).catch(() => {});
         return id;
@@ -514,6 +594,7 @@ export const useDS = create<DSStore>()(
         palettes: get().palettes,
         bgGroup: get().bgGroup,
         borderGroup: get().borderGroup,
+        baseColorList: get().baseColorList,
         components: get().components,
       }),
     }),

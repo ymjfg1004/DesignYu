@@ -193,7 +193,8 @@ interface DSStore {
   setSemanticEmoji: (id: string, emoji: string) => void;
   addSemantic: () => void;
   removeSemantic: (id: string) => void;
-  reorderSemantic: (fromId: string, toId: string) => void;
+  reorderSemantic: (fromId: string, toId: string, position?: 'before' | 'after') => void;
+  convertSemanticToBase: (id: string, targetKey?: string, position?: 'before' | 'after') => void;
 
   // 베이스 팔레트 액션
   setBase: (key: PaletteKey, hex: string) => void;
@@ -203,6 +204,8 @@ interface DSStore {
   addBaseColor: () => void;
   removeBaseColor: (key: string) => void;
   resetBaseColors: () => void;
+  reorderBaseColors: (fromKey: string, toKey: string, position?: 'before' | 'after') => void;
+  convertBaseToSemantic: (key: string, targetId?: string, position?: 'before' | 'after') => void;
   setStatusColorsEnabled: (v: boolean) => void;
 
   updateComponent: (compKey: string, patch: Record<string, unknown>) => void;
@@ -308,17 +311,38 @@ export const useDS = create<DSStore>()(
         set((s) => ({ semanticList: s.semanticList.filter((item) => item.id !== id) }));
       },
 
-      reorderSemantic: (fromId: string, toId: string) =>
+      reorderSemantic: (fromId, toId, position = 'before') =>
         set((s) => {
           const FIXED = ['primary', 'info', 'success', 'error', 'warning'];
           if (FIXED.includes(fromId) || FIXED.includes(toId)) return s;
           const list = [...s.semanticList];
           const fromIdx = list.findIndex((i) => i.id === fromId);
-          const toIdx = list.findIndex((i) => i.id === toId);
-          if (fromIdx === -1 || toIdx === -1) return s;
+          if (fromIdx === -1) return s;
           const [moved] = list.splice(fromIdx, 1);
+          let toIdx = list.findIndex((i) => i.id === toId);
+          if (toIdx === -1) return s;
+          if (position === 'after') toIdx += 1;
           list.splice(toIdx, 0, moved);
           return { semanticList: list };
+        }),
+
+      convertSemanticToBase: (id, targetKey, position = 'before') =>
+        set((s) => {
+          const FIXED = ['primary', 'info', 'success', 'error', 'warning'];
+          if (FIXED.includes(id)) return s;
+          const item = s.semanticList.find((i) => i.id === id);
+          if (!item) return s;
+          if (s.baseColorList.some((b) => b.key === id)) return s;
+          const list = [...s.baseColorList];
+          let pos = targetKey ? list.findIndex((b) => b.key === targetKey) : -1;
+          if (pos === -1) pos = list.length;
+          else if (position === 'after') pos += 1;
+          list.splice(pos, 0, { key: id, label: item.label });
+          return {
+            semanticList: s.semanticList.filter((i) => i.id !== id),
+            baseColorList: list,
+            palettes: { ...s.palettes, [id]: { base: item.base, scale: item.scale } },
+          };
         }),
 
       setBase: (key, hex) =>
@@ -372,6 +396,42 @@ export const useDS = create<DSStore>()(
           return {
             baseColorList: JSON.parse(JSON.stringify(DEFAULT_BASE_COLOR_LIST)),
             palettes: pals,
+          };
+        }),
+
+      reorderBaseColors: (fromKey, toKey, position = 'before') =>
+        set((s) => {
+          const list = [...s.baseColorList];
+          const fromIdx = list.findIndex((b) => b.key === fromKey);
+          if (fromIdx === -1) return s;
+          const [moved] = list.splice(fromIdx, 1);
+          let toIdx = list.findIndex((b) => b.key === toKey);
+          if (toIdx === -1) return s;
+          if (position === 'after') toIdx += 1;
+          list.splice(toIdx, 0, moved);
+          return { baseColorList: list };
+        }),
+
+      convertBaseToSemantic: (key, targetId, position = 'before') =>
+        set((s) => {
+          const baseItem = s.baseColorList.find((b) => b.key === key);
+          const pal = s.palettes[key];
+          if (!baseItem || !pal) return s;
+          if (s.semanticList.some((i) => i.id === key)) return s;
+          const FIXED_BOTTOM = ['info', 'success', 'error', 'warning'];
+          const nextSemanticList = [...s.semanticList];
+          let pos = targetId ? nextSemanticList.findIndex((i) => i.id === targetId) : -1;
+          if (pos === -1) {
+            const fixedIdx = nextSemanticList.findIndex((i) => FIXED_BOTTOM.includes(i.id));
+            pos = fixedIdx === -1 ? nextSemanticList.length : fixedIdx;
+          } else if (position === 'after') {
+            pos += 1;
+          }
+          const newItem: SemanticItem = { id: key, label: baseItem.label, emoji: '🎨', base: pal.base, scale: pal.scale };
+          nextSemanticList.splice(pos, 0, newItem);
+          return {
+            baseColorList: s.baseColorList.filter((b) => b.key !== key),
+            semanticList: nextSemanticList,
           };
         }),
 

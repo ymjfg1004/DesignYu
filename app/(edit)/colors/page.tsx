@@ -208,6 +208,13 @@ function PaletteCard({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow group/pal">
       <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-0.5 select-none">
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+            <circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/>
+            <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+            <circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/>
+          </svg>
+        </div>
         <div className="relative flex-shrink-0">
           <div className="w-7 h-7 rounded-lg border border-black/10 cursor-pointer" style={{ background: pal.base }} />
           <input type="color" value={pal.base} onChange={(e) => setBase(palKey, e.target.value)}
@@ -276,10 +283,29 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
   );
 }
 
+/* ── 드롭 위치 표시선 ─────────────────────────────────── */
+function DropLine() {
+  return <div className="h-1 my-0.5 rounded-full bg-blue-500" />;
+}
+
 /* ── 메인 페이지 ──────────────────────────────────────── */
+type DragItem = { type: 'semantic' | 'base'; key: string };
+type DropTarget = { key: string; pos: 'before' | 'after' };
+
 export default function ColorsPage() {
-  const { semanticList, addSemantic, reorderSemantic, baseColorList, addBaseColor, removeBaseColor, resetBaseColors, statusColorsEnabled, setStatusColorsEnabled } = useDS();
-  const dragId = useRef<string | null>(null);
+  const {
+    semanticList, addSemantic, reorderSemantic, convertSemanticToBase,
+    baseColorList, addBaseColor, removeBaseColor, resetBaseColors, reorderBaseColors, convertBaseToSemantic,
+    statusColorsEnabled, setStatusColorsEnabled,
+  } = useDS();
+  const dragItem = useRef<DragItem | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+
+  const computePos = (e: React.DragEvent<HTMLElement>): 'before' | 'after' => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+  };
+  const clearDrag = () => { dragItem.current = null; setDropTarget(null); };
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto">
@@ -296,20 +322,35 @@ export default function ColorsPage() {
         const renderCard = (item: SemanticItem) => {
           const canDrag = !FIXED_SEMANTIC.includes(item.id);
           const canRemove = canDrag;
+          const isTarget = dropTarget?.key === item.id;
           return (
-            <div
-              key={item.id}
-              draggable={canDrag}
-              onDragStart={() => { dragId.current = item.id; }}
-              onDragOver={(e) => { if (canDrag) e.preventDefault(); }}
-              onDrop={() => {
-                if (dragId.current && dragId.current !== item.id && canDrag) {
-                  reorderSemantic(dragId.current, item.id);
-                }
-                dragId.current = null;
-              }}
-            >
-              <SemanticCard item={item} canRemove={canRemove} canDrag={canDrag} dragHandleProps={{ draggable: false }} />
+            <div key={item.id}>
+              {isTarget && dropTarget.pos === 'before' && <DropLine />}
+              <div
+                draggable={canDrag}
+                onDragStart={() => { dragItem.current = { type: 'semantic', key: item.id }; }}
+                onDragOver={(e) => {
+                  const d = dragItem.current;
+                  if ((d?.type === 'semantic' && canDrag) || d?.type === 'base') {
+                    e.preventDefault();
+                    setDropTarget({ key: item.id, pos: computePos(e) });
+                  }
+                }}
+                onDragEnd={clearDrag}
+                onDrop={() => {
+                  const d = dragItem.current;
+                  const pos = dropTarget?.pos ?? 'before';
+                  if (d?.type === 'semantic' && canDrag && d.key !== item.id) {
+                    reorderSemantic(d.key, item.id, pos);
+                  } else if (d?.type === 'base') {
+                    convertBaseToSemantic(d.key, item.id, pos);
+                  }
+                  clearDrag();
+                }}
+              >
+                <SemanticCard item={item} canRemove={canRemove} canDrag={canDrag} dragHandleProps={{ draggable: false }} />
+              </div>
+              {isTarget && dropTarget.pos === 'after' && <DropLine />}
             </div>
           );
         };
@@ -326,7 +367,14 @@ export default function ColorsPage() {
                   + 추가
                 </button>
               </SectionHeader>
-              <div className="grid grid-cols-1 gap-3">
+              <div
+                className="grid grid-cols-1 gap-3"
+                onDragOver={(e) => { if (dragItem.current?.type === 'base') e.preventDefault(); }}
+                onDrop={() => {
+                  if (dragItem.current?.type === 'base') convertBaseToSemantic(dragItem.current.key);
+                  clearDrag();
+                }}
+              >
                 {dynamicItems.map(renderCard)}
               </div>
             </div>
@@ -370,16 +418,49 @@ export default function ColorsPage() {
             </button>
           </div>
         </SectionHeader>
-        <div className="grid grid-cols-1 gap-3">
-          {baseColorList.map(({ key, label }) => (
-            <PaletteCard
-              key={key}
-              palKey={key}
-              label={label}
-              canRemove={baseColorList.length > 1}
-              onRemove={() => removeBaseColor(key)}
-            />
-          ))}
+        <div
+          className="grid grid-cols-1 gap-3"
+          onDragOver={(e) => { if (dragItem.current?.type === 'semantic') e.preventDefault(); }}
+          onDrop={() => {
+            if (dragItem.current?.type === 'semantic') convertSemanticToBase(dragItem.current.key);
+            clearDrag();
+          }}
+        >
+          {baseColorList.map(({ key, label }) => {
+            const isTarget = dropTarget?.key === key;
+            return (
+            <div key={key}>
+              {isTarget && dropTarget.pos === 'before' && <DropLine />}
+              <div
+                draggable
+                onDragStart={() => { dragItem.current = { type: 'base', key }; }}
+                onDragOver={(e) => {
+                  const d = dragItem.current;
+                  if (d?.type === 'base' || d?.type === 'semantic') {
+                    e.preventDefault();
+                    setDropTarget({ key, pos: computePos(e) });
+                  }
+                }}
+                onDragEnd={clearDrag}
+                onDrop={() => {
+                  const d = dragItem.current;
+                  const pos = dropTarget?.pos ?? 'before';
+                  if (d?.type === 'base' && d.key !== key) reorderBaseColors(d.key, key, pos);
+                  else if (d?.type === 'semantic') convertSemanticToBase(d.key, key, pos);
+                  clearDrag();
+                }}
+              >
+                <PaletteCard
+                  palKey={key}
+                  label={label}
+                  canRemove={baseColorList.length > 1}
+                  onRemove={() => removeBaseColor(key)}
+                />
+              </div>
+              {isTarget && dropTarget.pos === 'after' && <DropLine />}
+            </div>
+            );
+          })}
         </div>
       </div>
     </div>

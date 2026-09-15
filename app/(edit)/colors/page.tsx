@@ -91,19 +91,23 @@ function SwatchCell({
   );
 }
 
-/* ── 커스텀 단계 칩 (예: 350) — 라벨 숫자를 직접 입력 ── */
+/* ── 커스텀 단계 칩 (예: 350) — 라벨 숫자를 직접 입력, 드래그로 순서 변경 ── */
 function ExtraSwatchCell({
   extra,
   onColorChange,
   onLabelChange,
   onTagChange,
   onRemove,
+  onDragStart,
+  onDropOnto,
 }: {
   extra: ExtraShade;
   onColorChange: (hex: string) => void;
   onLabelChange: (label: string) => void;
   onTagChange: (tag: string) => void;
   onRemove: () => void;
+  onDragStart: () => void;
+  onDropOnto: () => void;
 }) {
   const [draft, setDraft] = useState(extra.hex.replace('#', ''));
   const textColor = getContrastColor(extra.hex);
@@ -114,10 +118,16 @@ function ExtraSwatchCell({
   }, [extra.hex]);
 
   return (
-    <div className="flex flex-col gap-1 group/extra">
-      <div className="relative group">
+    <div
+      className="flex flex-col gap-1 group/extra"
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDropOnto}
+    >
+      <div className="relative group cursor-grab active:cursor-grabbing">
         <div
-          className="w-full rounded-md border border-dashed border-blue-300 cursor-pointer flex flex-col items-center justify-end pb-1"
+          className="w-full rounded-md border border-dashed border-blue-300 flex flex-col items-center justify-end pb-1"
           style={{ background: extra.hex, height: 40 }}
         >
           <span className="text-[9px] font-bold leading-none" style={{ color: textColor }}>
@@ -182,28 +192,32 @@ function SwatchGrid({
   extraShades,
   onSwatchChange,
   onTagChange,
-  onAddExtra,
   onExtraColorChange,
   onExtraLabelChange,
   onExtraTagChange,
   onExtraRemove,
+  onExtraReorder,
 }: {
   scale: Record<Shade, string>;
   tags?: Partial<Record<Shade, string>>;
   extraShades?: ExtraShade[];
   onSwatchChange: (shade: Shade, hex: string) => void;
   onTagChange?: (shade: Shade, tag: string) => void;
-  onAddExtra?: () => void;
   onExtraColorChange?: (id: string, hex: string) => void;
   onExtraLabelChange?: (id: string, label: string) => void;
   onExtraTagChange?: (id: string, tag: string) => void;
   onExtraRemove?: (id: string) => void;
+  onExtraReorder?: (fromId: string, toId: string) => void;
 }) {
-  // 고정 50~900 단계와 커스텀 단계를 라벨 숫자 기준으로 정렬해 한 줄에 표시
-  type Cell = { key: string; sortKey: number; render: () => React.ReactNode };
+  const dragExtraId = useRef<string | null>(null);
+
+  // 고정 50~900 단계와 커스텀 단계를 라벨 숫자 기준으로 정렬해 한 줄에 표시.
+  // 라벨이 같거나 비어있어 순서가 애매할 땐 배열 순서(드래그로 바꾼 순서)로 타이브레이크.
+  type Cell = { key: string; sortKey: number; tieBreak: number; render: () => React.ReactNode };
   const cells: Cell[] = SHADES.map((shade) => ({
     key: `shade-${shade}`,
     sortKey: shade,
+    tieBreak: 0,
     render: () => (
       <SwatchCell
         color={scale[shade]}
@@ -214,11 +228,12 @@ function SwatchGrid({
       />
     ),
   }));
-  (extraShades ?? []).forEach((extra) => {
+  (extraShades ?? []).forEach((extra, idx) => {
     const n = parseInt(extra.label, 10);
     cells.push({
       key: extra.id,
       sortKey: Number.isFinite(n) ? n : 9999,
+      tieBreak: idx,
       render: () => (
         <ExtraSwatchCell
           extra={extra}
@@ -226,27 +241,22 @@ function SwatchGrid({
           onLabelChange={(label) => onExtraLabelChange?.(extra.id, label)}
           onTagChange={(tag) => onExtraTagChange?.(extra.id, tag)}
           onRemove={() => onExtraRemove?.(extra.id)}
+          onDragStart={() => { dragExtraId.current = extra.id; }}
+          onDropOnto={() => {
+            if (dragExtraId.current && dragExtraId.current !== extra.id) {
+              onExtraReorder?.(dragExtraId.current, extra.id);
+            }
+            dragExtraId.current = null;
+          }}
         />
       ),
     });
   });
-  cells.sort((a, b) => a.sortKey - b.sortKey);
+  cells.sort((a, b) => a.sortKey - b.sortKey || a.tieBreak - b.tieBreak);
 
   return (
-    <div
-      className="grid gap-1.5"
-      style={{ gridTemplateColumns: `repeat(${cells.length + (onAddExtra ? 1 : 0)}, minmax(0, 1fr))` }}
-    >
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}>
       {cells.map((c) => <div key={c.key}>{c.render()}</div>)}
-      {onAddExtra && (
-        <button
-          onClick={onAddExtra}
-          title="50~900 사이에 커스텀 단계 추가 (예: 350)"
-          className="h-full min-h-[40px] flex items-center justify-center rounded-md border border-dashed border-gray-300 text-gray-300 hover:text-blue-500 hover:border-blue-300 transition-colors text-lg"
-        >
-          +
-        </button>
-      )}
     </div>
   );
 }
@@ -267,7 +277,7 @@ function SemanticCard({
 }) {
   const {
     palettes, setSemanticBase, setSemanticSwatch, setSwatchTag, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic,
-    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag,
+    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag, reorderExtraShade,
   } = useDS();
   const tags = palettes[item.id]?.tags;
   const extraShades = palettes[item.id]?.extraShades;
@@ -318,8 +328,13 @@ function SemanticCard({
           </div>
           <p className="text-[10px] font-mono text-gray-400 mt-0.5">{item.base}</p>
         </div>
+        <button onClick={() => addExtraShade(item.id)}
+          title="50~900 사이에 커스텀 단계 추가"
+          className="px-2.5 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-bold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors flex-shrink-0">
+          칩 추가
+        </button>
         <button onClick={() => autoGenerateSemantic(item.id)}
-          className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0">
+          className="px-2.5 py-1 bg-gray-200 text-black text-[10px] font-bold rounded-lg hover:bg-gray-300 transition-colors flex-shrink-0">
           자동생성
         </button>
         {canRemove ? (
@@ -339,11 +354,11 @@ function SemanticCard({
         extraShades={extraShades}
         onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)}
         onTagChange={(sh, tag) => setSwatchTag(item.id, sh, tag)}
-        onAddExtra={() => addExtraShade(item.id)}
         onExtraColorChange={(id, hex) => setExtraShadeColor(item.id, id, hex)}
         onExtraLabelChange={(id, label) => setExtraShadeLabel(item.id, id, label)}
         onExtraTagChange={(id, tag) => setExtraShadeTag(item.id, id, tag)}
         onExtraRemove={(id) => removeExtraShade(item.id, id)}
+        onExtraReorder={(fromId, toId) => reorderExtraShade(item.id, fromId, toId)}
       />
     </div>
   );
@@ -365,7 +380,7 @@ function PaletteCard({
 }) {
   const {
     palettes, setBase, setSwatchColor, setSwatchTag, autoGenerate, setBaseLabel,
-    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag,
+    addExtraShade, removeExtraShade, setExtraShadeLabel, setExtraShadeColor, setExtraShadeTag, reorderExtraShade,
   } = useDS();
   const [draft, setDraft] = useState('');
   const pal = palettes[palKey];
@@ -407,10 +422,17 @@ function PaletteCard({
             className="text-[10px] font-mono text-gray-400 w-full border-0 bg-transparent focus:outline-none p-0 mt-0.5 block" />
         </div>
         {!isSingle && (
-          <button onClick={() => autoGenerate(palKey)}
-            className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0">
-            자동생성
-          </button>
+          <>
+            <button onClick={() => addExtraShade(palKey)}
+              title="50~900 사이에 커스텀 단계 추가"
+              className="px-2.5 py-1 bg-white border border-gray-200 text-gray-500 text-[10px] font-bold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors flex-shrink-0">
+              칩 추가
+            </button>
+            <button onClick={() => autoGenerate(palKey)}
+              className="px-2.5 py-1 bg-gray-200 text-black text-[10px] font-bold rounded-lg hover:bg-gray-300 transition-colors flex-shrink-0">
+              자동생성
+            </button>
+          </>
         )}
         {canRemove ? (
           <button
@@ -431,11 +453,11 @@ function PaletteCard({
             extraShades={pal.extraShades}
             onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)}
             onTagChange={(sh, tag) => setSwatchTag(palKey, sh, tag)}
-            onAddExtra={() => addExtraShade(palKey)}
             onExtraColorChange={(id, hex) => setExtraShadeColor(palKey, id, hex)}
             onExtraLabelChange={(id, label) => setExtraShadeLabel(palKey, id, label)}
             onExtraTagChange={(id, tag) => setExtraShadeTag(palKey, id, tag)}
             onExtraRemove={(id) => removeExtraShade(palKey, id)}
+            onExtraReorder={(fromId, toId) => reorderExtraShade(palKey, fromId, toId)}
           />
         </div>
       )}

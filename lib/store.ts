@@ -206,6 +206,7 @@ interface DSStore {
   setExtraShadeLabel: (key: PaletteKey, id: string, label: string) => void;
   setExtraShadeColor: (key: PaletteKey, id: string, hex: string) => void;
   setExtraShadeTag: (key: PaletteKey, id: string, tag: string) => void;
+  reorderExtraShade: (key: PaletteKey, fromId: string, toId: string) => void;
   autoGenerate: (key: PaletteKey) => void;
   setBaseLabel: (key: string, label: string) => void;
   addBaseColor: () => void;
@@ -407,6 +408,19 @@ export const useDS = create<DSStore>()(
           return {
             palettes: { ...s.palettes, [key]: { ...pal, extraShades: (pal.extraShades ?? []).map((e) => e.id === id ? { ...e, tag } : e) } },
           };
+        }),
+
+      reorderExtraShade: (key, fromId, toId) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal?.extraShades) return s;
+          const list = [...pal.extraShades];
+          const fromIdx = list.findIndex((e) => e.id === fromId);
+          const toIdx = list.findIndex((e) => e.id === toId);
+          if (fromIdx === -1 || toIdx === -1) return s;
+          const [moved] = list.splice(fromIdx, 1);
+          list.splice(toIdx, 0, moved);
+          return { palettes: { ...s.palettes, [key]: { ...pal, extraShades: list } } };
         }),
 
       autoGenerate: (key) =>

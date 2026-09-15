@@ -39,13 +39,14 @@ const TAILWIND_SCALES: Partial<Record<PaletteKey, Record<Shade, string>>> = {
 
 // 피그마 각 셀 하단의 사용처 캡션 ("new" = 아직 미사용, 그 외는 실제 사용되는 토큰/위치명)
 const TAILWIND_TAGS: Partial<Record<PaletteKey, Partial<Record<Shade, string>>>> = {
-  gray:   { 50:'일반이체 bg', 100:'new', 200:'$border2', 300:'$border3', 400:'$icoColor', 500:'$black3', 600:'$black6', 700:'$black4', 800:'$default', 900:'$black1' },
-  slate:  { 50:'new', 100:'$bg', 200:'$border', 300:'grid-bg5', 400:'new', 500:'grid-bg6', 600:'grid-bg7', 700:'new', 800:'new', 900:'new' },
-  blue:   { 50:'grid-bg10', 100:'grid-bg9', 200:'$blue2', 300:'new', 400:'new', 500:'$blue', 600:'$primary2', 700:'new', 800:'new', 900:'new' },
-  sky:    { 50:'$hover', 100:'.cell-proc-qty', 200:'$active', 300:'new', 400:'new', 500:'new', 600:'$primary2', 700:'new', 800:'new', 900:'new' },
-  red:    { 50:'grid-bg13', 100:'new', 200:'$red2 · grid-bg1', 300:'grid-bg12', 400:'new', 500:'$red', 600:'new', 700:'new', 800:'new', 900:'new' },
+  primary: { 50:'new', 100:'new', 200:'new', 300:'new', 400:'new', 500:'new', 600:'new', 700:'main', 800:'new', 900:'new' },
+  gray:   { 50:'일반이체 bg', 100:'new', 200:'border2', 300:'border3', 400:'icoColor', 500:'black3', 600:'black6', 700:'black4', 800:'default', 900:'black1' },
+  slate:  { 50:'new', 100:'bg', 200:'border', 300:'grid-bg5', 400:'new', 500:'grid-bg6', 600:'grid-bg7', 700:'new', 800:'new', 900:'new' },
+  blue:   { 50:'grid-bg10', 100:'grid-bg9', 200:'blue2', 300:'new', 400:'new', 500:'blue', 600:'primary2', 700:'new', 800:'new', 900:'new' },
+  sky:    { 50:'hover', 100:'.cell-proc-qty', 200:'active', 300:'new', 400:'new', 500:'new', 600:'primary2', 700:'new', 800:'new', 900:'new' },
+  red:    { 50:'grid-bg13', 100:'new', 200:'red2 · grid-bg1', 300:'grid-bg12', 400:'new', 500:'red', 600:'new', 700:'new', 800:'new', 900:'new' },
   orange: { 50:'new', 100:'new', 200:'new', 300:'new', 400:'new', 500:'로고', 600:'new', 700:'new', 800:'new', 900:'new' },
-  green:  { 50:'new', 100:'new', 200:'new', 300:'grid-bg3', 400:'new', 500:'$green', 600:'new', 700:'new', 800:'new', 900:'new' },
+  green:  { 50:'new', 100:'new', 200:'new', 300:'grid-bg3', 400:'new', 500:'green', 600:'new', 700:'new', 800:'new', 900:'new' },
   mint:   { 50:'grid-bg8', 100:'new', 200:'new', 300:'new', 400:'new', 500:'new', 600:'new', 700:'new', 800:'new', 900:'new' },
 };
 
@@ -581,7 +582,8 @@ export const useDS = create<DSStore>()(
                 {
                   base: pal.base,
                   scale: { ...generateScale(pal.base), ...pal.scale },
-                  ...(pal.tags ?? current.palettes[k]?.tags ? { tags: pal.tags ?? current.palettes[k]?.tags } : {}),
+                  // tags는 사용자가 편집할 수 없는 코드 쪽 표시용 메타데이터라 항상 최신 기본값을 사용
+                  ...(current.palettes[k]?.tags ? { tags: current.palettes[k]?.tags } : {}),
                 },
               ])
             ) as Record<PaletteKey, Palette>)

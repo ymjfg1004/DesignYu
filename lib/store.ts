@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateScale } from './colorUtils';
-import type { Palette, PaletteKey, Shade, SemanticItem, DesignSystemData, InputSet, BaseColorItem } from './types';
+import type { Palette, PaletteKey, Shade, SemanticItem, DesignSystemData, InputSet, BaseColorItem, ExtraShade } from './types';
 
 // 파로스/스텔라 컬러 시스템 (Figma: PHAROS 제품 디자인 > 24526:82154) 기준 값
 const PALETTE_DEFAULTS: Record<PaletteKey, string> = {
@@ -201,6 +201,11 @@ interface DSStore {
   setBase: (key: PaletteKey, hex: string) => void;
   setSwatchColor: (key: PaletteKey, shade: Shade, hex: string) => void;
   setSwatchTag: (key: PaletteKey, shade: Shade, tag: string) => void;
+  addExtraShade: (key: PaletteKey) => void;
+  removeExtraShade: (key: PaletteKey, id: string) => void;
+  setExtraShadeLabel: (key: PaletteKey, id: string, label: string) => void;
+  setExtraShadeColor: (key: PaletteKey, id: string, hex: string) => void;
+  setExtraShadeTag: (key: PaletteKey, id: string, tag: string) => void;
   autoGenerate: (key: PaletteKey) => void;
   setBaseLabel: (key: string, label: string) => void;
   addBaseColor: () => void;
@@ -233,6 +238,7 @@ interface FullPresetData {
   preset?: { id?: string; name?: string };
   palettes?: Record<string, Record<string, string>>;
   paletteTags?: Record<string, Partial<Record<Shade, string>>>;
+  paletteExtraShades?: Record<string, ExtraShade[]>;
   semanticList?: SemanticItem[];
   baseColorList?: BaseColorItem[];
   components?: Record<string, unknown>;
@@ -357,6 +363,52 @@ export const useDS = create<DSStore>()(
           palettes: { ...s.palettes, [key]: { ...s.palettes[key], tags: { ...s.palettes[key].tags, [shade]: tag } } },
         })),
 
+      addExtraShade: (key) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal) return s;
+          const newShade: ExtraShade = { id: `extra-${Date.now()}`, label: '', hex: pal.base, tag: '' };
+          return {
+            palettes: { ...s.palettes, [key]: { ...pal, extraShades: [...(pal.extraShades ?? []), newShade] } },
+          };
+        }),
+
+      removeExtraShade: (key, id) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal) return s;
+          return {
+            palettes: { ...s.palettes, [key]: { ...pal, extraShades: (pal.extraShades ?? []).filter((e) => e.id !== id) } },
+          };
+        }),
+
+      setExtraShadeLabel: (key, id, label) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal) return s;
+          return {
+            palettes: { ...s.palettes, [key]: { ...pal, extraShades: (pal.extraShades ?? []).map((e) => e.id === id ? { ...e, label } : e) } },
+          };
+        }),
+
+      setExtraShadeColor: (key, id, hex) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal) return s;
+          return {
+            palettes: { ...s.palettes, [key]: { ...pal, extraShades: (pal.extraShades ?? []).map((e) => e.id === id ? { ...e, hex } : e) } },
+          };
+        }),
+
+      setExtraShadeTag: (key, id, tag) =>
+        set((s) => {
+          const pal = s.palettes[key];
+          if (!pal) return s;
+          return {
+            palettes: { ...s.palettes, [key]: { ...pal, extraShades: (pal.extraShades ?? []).map((e) => e.id === id ? { ...e, tag } : e) } },
+          };
+        }),
+
       autoGenerate: (key) =>
         set((s) => ({
           palettes: { ...s.palettes, [key]: { ...s.palettes[key], scale: generateScale(s.palettes[key].base) } },
@@ -454,9 +506,11 @@ export const useDS = create<DSStore>()(
         const components = JSON.parse(JSON.stringify(s.components));
         const palettes: Record<string, Record<string, string>> = {};
         const paletteTags: Record<string, Partial<Record<Shade, string>>> = {};
+        const paletteExtraShades: Record<string, ExtraShade[]> = {};
         Object.entries(s.palettes).forEach(([k, pal]) => {
           palettes[k] = Object.fromEntries(Object.entries(pal.scale).map(([sh, hex]) => [sh, hex as string]));
           if (pal.tags) paletteTags[k] = pal.tags;
+          if (pal.extraShades?.length) paletteExtraShades[k] = pal.extraShades;
         });
         set((prev) => ({
           presets: [...prev.presets, { id, name, createdAt, components }],
@@ -467,7 +521,7 @@ export const useDS = create<DSStore>()(
           body: JSON.stringify({
             designYu: true, version: '1',
             preset: { id, name, createdAt },
-            palettes, paletteTags, components,
+            palettes, paletteTags, paletteExtraShades, components,
             semanticList: s.semanticList,
             baseColorList: s.baseColorList,
           }),
@@ -522,10 +576,12 @@ export const useDS = create<DSStore>()(
               // tags는 이 세트에 실제로 저장된 값만 사용 — 코드 기본값(TAILWIND_TAGS)으로 대체하면
               // 같은 색상 키를 쓰는 다른 세트(예: 앵커의 gray)에 파로스 전용 설명이 새어 들어감
               const tags = data.paletteTags?.[k];
+              const extraShades = data.paletteExtraShades?.[k];
               pals[k] = {
                 base,
                 scale: { ...generateScale(base), ...sc } as Record<Shade, string>,
                 ...(tags ? { tags } : {}),
+                ...(extraShades?.length ? { extraShades } : {}),
               };
             });
             next.palettes = pals as Record<PaletteKey, Palette>;
@@ -550,9 +606,11 @@ export const useDS = create<DSStore>()(
         const components = JSON.parse(JSON.stringify(s.components));
         const palettes: Record<string, Record<string, string>> = {};
         const paletteTags: Record<string, Partial<Record<Shade, string>>> = {};
+        const paletteExtraShades: Record<string, ExtraShade[]> = {};
         Object.entries(s.palettes).forEach(([k, pal]) => {
           palettes[k] = Object.fromEntries(Object.entries(pal.scale).map(([sh, hex]) => [sh, hex as string]));
           if (pal.tags) paletteTags[k] = pal.tags;
+          if (pal.extraShades?.length) paletteExtraShades[k] = pal.extraShades;
         });
         set((prev) => {
           const exists = prev.presets.some((p) => p.id === id);
@@ -567,7 +625,7 @@ export const useDS = create<DSStore>()(
           body: JSON.stringify({
             designYu: true, version: '1',
             preset: { id, name: nm, createdAt, updatedAt: createdAt },
-            palettes, paletteTags, components,
+            palettes, paletteTags, paletteExtraShades, components,
             semanticList: s.semanticList,
             baseColorList: s.baseColorList,
           }),
@@ -600,8 +658,10 @@ export const useDS = create<DSStore>()(
                 {
                   base: pal.base,
                   scale: { ...generateScale(pal.base), ...pal.scale },
-                  // tags는 사용자가 편집할 수 없는 코드 쪽 표시용 메타데이터라 항상 최신 기본값을 사용
-                  ...(current.palettes[k]?.tags ? { tags: current.palettes[k]?.tags } : {}),
+                  // tags/extraShades는 사용자가 직접 입력하는 값이라 저장된 그대로 복원
+                  // (코드 기본값으로 대체하면 다른 색상 시스템의 설명이 새어 들어갈 수 있음)
+                  ...(pal.tags ? { tags: pal.tags } : {}),
+                  ...(pal.extraShades?.length ? { extraShades: pal.extraShades } : {}),
                 },
               ])
             ) as Record<PaletteKey, Palette>)

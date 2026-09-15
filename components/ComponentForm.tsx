@@ -211,6 +211,9 @@ function ShadeSelect({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // white/black은 모든 단계가 같은 색이라 단계 선택이 의미 없음
+  if (palValue === 'white' || palValue === 'black') return null;
+
   const chip = (s: Shade) => palValue ? (palettes[palValue]?.scale[s] ?? '#ccc') : '#e5e7eb';
 
   return (

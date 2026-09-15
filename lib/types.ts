@@ -1,11 +1,21 @@
 export type Shade = 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 export type ColorScale = Record<Shade, string>;
 
+// 50~900 표준 단계 사이에 끼워 넣는 커스텀 칩 (예: 앵커의 slate 350)
+export interface ExtraShade {
+  id: string;
+  label: string;
+  hex: string;
+  tag?: string;
+}
+
 export interface Palette {
   base: string;
   scale: ColorScale;
   // 피그마 원본의 셀별 사용처 태그 (예: "new", "$primary", "$border2", "grid-bg1")
   tags?: Partial<Record<Shade, string>>;
+  // 표준 10단계 외에 추가된 커스텀 단계 (예: 350)
+  extraShades?: ExtraShade[];
 }
 
 // 동적 시맨틱 컬러 항목

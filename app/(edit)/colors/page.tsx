@@ -65,8 +65,8 @@ function SwatchCell({
       {tag && (
         <p
           title={tag}
-          className={`text-center truncate leading-none ${isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'}`}
-          style={{ fontSize: 9 }}
+          className={`text-center break-words leading-tight ${isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'}`}
+          style={{ fontSize: 10 }}
         >
           {tag}
         </p>
@@ -255,9 +255,30 @@ function PaletteCard({
   );
 }
 
+/* ── 온/오프 토글 스위치 ──────────────────────────────── */
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
+        checked ? 'bg-blue-600' : 'bg-gray-200'
+      }`}
+    >
+      <span
+        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-4' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  );
+}
+
 /* ── 메인 페이지 ──────────────────────────────────────── */
 export default function ColorsPage() {
-  const { semanticList, addSemantic, reorderSemantic, baseColorList, addBaseColor, removeBaseColor, resetBaseColors } = useDS();
+  const { semanticList, addSemantic, reorderSemantic, baseColorList, addBaseColor, removeBaseColor, resetBaseColors, statusColorsEnabled, setStatusColorsEnabled } = useDS();
   const dragId = useRef<string | null>(null);
 
   return (
@@ -312,13 +333,18 @@ export default function ColorsPage() {
 
             {/* ── 상태 컬러 (fixed bottom) ── */}
             <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm font-bold text-gray-700">상태 컬러</span>
-                <span className="text-xs text-gray-400">— 고정</span>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-700">상태 컬러</span>
+                  <span className="text-xs text-gray-400">— 고정</span>
+                </div>
+                <ToggleSwitch checked={statusColorsEnabled} onChange={setStatusColorsEnabled} />
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                {fixedItems.map(renderCard)}
-              </div>
+              {statusColorsEnabled && (
+                <div className="grid grid-cols-1 gap-3">
+                  {fixedItems.map(renderCard)}
+                </div>
+              )}
             </div>
           </>
         );

@@ -182,6 +182,7 @@ interface DSStore {
   semanticList: SemanticItem[];
   palettes: Record<PaletteKey, Palette>;
   baseColorList: BaseColorItem[];
+  statusColorsEnabled: boolean;
   components: typeof defaultComponents;
 
   // 시맨틱 컬러 액션
@@ -202,6 +203,7 @@ interface DSStore {
   addBaseColor: () => void;
   removeBaseColor: (key: string) => void;
   resetBaseColors: () => void;
+  setStatusColorsEnabled: (v: boolean) => void;
 
   updateComponent: (compKey: string, patch: Record<string, unknown>) => void;
   getColor: (palKey: PaletteKey | null | undefined, shade: Shade) => string;
@@ -253,6 +255,7 @@ export const useDS = create<DSStore>()(
       semanticList: DEFAULT_SEMANTIC_LIST,
       palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
       baseColorList: DEFAULT_BASE_COLOR_LIST,
+      statusColorsEnabled: true,
       components: defaultComponents,
 
       setSemanticBase: (id, hex) =>
@@ -372,6 +375,8 @@ export const useDS = create<DSStore>()(
           };
         }),
 
+      setStatusColorsEnabled: (v) => set({ statusColorsEnabled: v }),
+
       updateComponent: (compKey, patch) =>
         set((s) => ({
           components: { ...s.components, [compKey]: { ...(s.components as Record<string, unknown>)[compKey] as object, ...patch } },
@@ -428,6 +433,7 @@ export const useDS = create<DSStore>()(
           semanticList: JSON.parse(JSON.stringify(DEFAULT_SEMANTIC_LIST)),
           palettes: Object.fromEntries(ALL_KEYS.map((k) => [k, makePalette(k)])) as Record<PaletteKey, Palette>,
           baseColorList: JSON.parse(JSON.stringify(DEFAULT_BASE_COLOR_LIST)),
+          statusColorsEnabled: true,
           components: JSON.parse(JSON.stringify(defaultComponents)),
           currentSetId: null,
           currentSetName: name,

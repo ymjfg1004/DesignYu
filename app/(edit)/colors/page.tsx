@@ -13,11 +13,13 @@ function SwatchCell({
   shade,
   tag,
   onChange,
+  onTagChange,
 }: {
   color: string;
   shade: Shade;
   tag?: string;
   onChange: (hex: string) => void;
+  onTagChange?: (tag: string) => void;
 }) {
   const [draft, setDraft] = useState(color.replace('#', ''));
   const textColor = getContrastColor(color);
@@ -62,14 +64,28 @@ function SwatchCell({
         className="w-full font-mono text-gray-600 border border-gray-200 rounded px-1 py-1.5 focus:outline-none focus:border-blue-400 text-center bg-white hover:border-gray-300 transition-colors"
         style={{ fontSize: 14 }}
       />
-      {tag && (
-        <p
+      {onTagChange ? (
+        <input
+          type="text"
+          value={tag ?? ''}
+          onChange={(e) => onTagChange(e.target.value)}
+          placeholder="설명"
           title={tag}
-          className={`text-center break-words leading-tight ${isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'}`}
+          className={`w-full text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-0.5 leading-tight placeholder:text-gray-200 ${
+            isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'
+          }`}
           style={{ fontSize: 10 }}
-        >
-          {tag}
-        </p>
+        />
+      ) : (
+        tag && (
+          <p
+            title={tag}
+            className={`text-center break-words leading-tight ${isUnused ? 'text-gray-300' : 'text-gray-600 font-semibold'}`}
+            style={{ fontSize: 10 }}
+          >
+            {tag}
+          </p>
+        )
       )}
     </div>
   );
@@ -80,10 +96,12 @@ function SwatchGrid({
   scale,
   tags,
   onSwatchChange,
+  onTagChange,
 }: {
   scale: Record<Shade, string>;
   tags?: Partial<Record<Shade, string>>;
   onSwatchChange: (shade: Shade, hex: string) => void;
+  onTagChange?: (shade: Shade, tag: string) => void;
 }) {
   return (
     <div className="grid grid-cols-10 gap-1.5">
@@ -94,6 +112,7 @@ function SwatchGrid({
           shade={shade}
           tag={tags?.[shade]}
           onChange={(hex) => onSwatchChange(shade, hex)}
+          onTagChange={onTagChange ? (tag) => onTagChange(shade, tag) : undefined}
         />
       ))}
     </div>
@@ -114,7 +133,7 @@ function SemanticCard({
   canDrag: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
-  const { palettes, setSemanticBase, setSemanticSwatch, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic } = useDS();
+  const { palettes, setSemanticBase, setSemanticSwatch, setSwatchTag, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic } = useDS();
   const tags = palettes[item.id]?.tags;
 
   return (
@@ -178,7 +197,12 @@ function SemanticCard({
           <div className="w-6 flex-shrink-0" />
         )}
       </div>
-      <SwatchGrid scale={item.scale} tags={tags} onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)} />
+      <SwatchGrid
+        scale={item.scale}
+        tags={tags}
+        onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)}
+        onTagChange={(sh, tag) => setSwatchTag(item.id, sh, tag)}
+      />
     </div>
   );
 }
@@ -197,7 +221,7 @@ function PaletteCard({
   canRemove: boolean;
   onRemove: () => void;
 }) {
-  const { palettes, setBase, setSwatchColor, autoGenerate, setBaseLabel } = useDS();
+  const { palettes, setBase, setSwatchColor, setSwatchTag, autoGenerate, setBaseLabel } = useDS();
   const [draft, setDraft] = useState('');
   const pal = palettes[palKey];
   if (!pal) return null;
@@ -256,7 +280,12 @@ function PaletteCard({
       </div>
       {!isSingle && (
         <div className="mt-3">
-          <SwatchGrid scale={pal.scale} tags={pal.tags} onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)} />
+          <SwatchGrid
+            scale={pal.scale}
+            tags={pal.tags}
+            onSwatchChange={(sh, hex) => setSwatchColor(palKey, sh, hex)}
+            onTagChange={(sh, tag) => setSwatchTag(palKey, sh, tag)}
+          />
         </div>
       )}
     </div>
@@ -407,7 +436,7 @@ export default function ColorsPage() {
 
       {/* ── 베이스 컬러 ──────────────────────────────── */}
       <div>
-        <SectionHeader title="베이스 컬러" desc="파로스/스텔라 컬러 시스템 — 헥사값 아래 작은 글씨는 피그마 실사용 태그(예: bg, border2)">
+        <SectionHeader title="베이스 컬러" desc="헥사값 아래 작은 칸에 사용처 설명을 직접 입력할 수 있어요">
           <div className="flex items-center gap-2">
             <button
               onClick={resetBaseColors}

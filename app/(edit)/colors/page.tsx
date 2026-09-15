@@ -114,7 +114,8 @@ function SemanticCard({
   canDrag: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
-  const { setSemanticBase, setSemanticSwatch, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic } = useDS();
+  const { palettes, setSemanticBase, setSemanticSwatch, autoGenerateSemantic, setSemanticLabel, setSemanticEmoji, removeSemantic } = useDS();
+  const tags = palettes[item.id]?.tags;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow group/sem">
@@ -177,7 +178,7 @@ function SemanticCard({
           <div className="w-6 flex-shrink-0" />
         )}
       </div>
-      <SwatchGrid scale={item.scale} onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)} />
+      <SwatchGrid scale={item.scale} tags={tags} onSwatchChange={(sh, hex) => setSemanticSwatch(item.id, sh, hex)} />
     </div>
   );
 }
@@ -352,7 +353,7 @@ export default function ColorsPage() {
 
       {/* ── 베이스 컬러 ──────────────────────────────── */}
       <div>
-        <SectionHeader title="베이스 컬러" desc="파로스/스텔라 컬러 시스템 — 헥사값 아래 작은 글씨는 피그마 실사용 태그(예: $bg, $border2)">
+        <SectionHeader title="베이스 컬러" desc="파로스/스텔라 컬러 시스템 — 헥사값 아래 작은 글씨는 피그마 실사용 태그(예: bg, border2)">
           <div className="flex items-center gap-2">
             <button
               onClick={resetBaseColors}

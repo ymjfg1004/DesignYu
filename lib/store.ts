@@ -313,8 +313,6 @@ export const useDS = create<DSStore>()(
 
       reorderSemantic: (fromId, toId, position = 'before') =>
         set((s) => {
-          const FIXED = ['primary', 'info', 'success', 'error', 'warning'];
-          if (FIXED.includes(fromId) || FIXED.includes(toId)) return s;
           const list = [...s.semanticList];
           const fromIdx = list.findIndex((i) => i.id === fromId);
           if (fromIdx === -1) return s;
@@ -328,8 +326,6 @@ export const useDS = create<DSStore>()(
 
       convertSemanticToBase: (id, targetKey, position = 'before') =>
         set((s) => {
-          const FIXED = ['primary', 'info', 'success', 'error', 'warning'];
-          if (FIXED.includes(id)) return s;
           const item = s.semanticList.find((i) => i.id === id);
           if (!item) return s;
           if (s.baseColorList.some((b) => b.key === id)) return s;

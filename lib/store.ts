@@ -200,6 +200,7 @@ interface DSStore {
   // 베이스 팔레트 액션
   setBase: (key: PaletteKey, hex: string) => void;
   setSwatchColor: (key: PaletteKey, shade: Shade, hex: string) => void;
+  setSwatchTag: (key: PaletteKey, shade: Shade, tag: string) => void;
   autoGenerate: (key: PaletteKey) => void;
   setBaseLabel: (key: string, label: string) => void;
   addBaseColor: () => void;
@@ -231,6 +232,7 @@ interface DSStore {
 interface FullPresetData {
   preset?: { id?: string; name?: string };
   palettes?: Record<string, Record<string, string>>;
+  paletteTags?: Record<string, Partial<Record<Shade, string>>>;
   semanticList?: SemanticItem[];
   baseColorList?: BaseColorItem[];
   components?: Record<string, unknown>;
@@ -350,6 +352,11 @@ export const useDS = create<DSStore>()(
           palettes: { ...s.palettes, [key]: { ...s.palettes[key], scale: { ...s.palettes[key].scale, [shade]: hex } } },
         })),
 
+      setSwatchTag: (key, shade, tag) =>
+        set((s) => ({
+          palettes: { ...s.palettes, [key]: { ...s.palettes[key], tags: { ...s.palettes[key].tags, [shade]: tag } } },
+        })),
+
       autoGenerate: (key) =>
         set((s) => ({
           palettes: { ...s.palettes, [key]: { ...s.palettes[key], scale: generateScale(s.palettes[key].base) } },
@@ -446,8 +453,10 @@ export const useDS = create<DSStore>()(
         const createdAt = new Date().toISOString();
         const components = JSON.parse(JSON.stringify(s.components));
         const palettes: Record<string, Record<string, string>> = {};
+        const paletteTags: Record<string, Partial<Record<Shade, string>>> = {};
         Object.entries(s.palettes).forEach(([k, pal]) => {
           palettes[k] = Object.fromEntries(Object.entries(pal.scale).map(([sh, hex]) => [sh, hex as string]));
+          if (pal.tags) paletteTags[k] = pal.tags;
         });
         set((prev) => ({
           presets: [...prev.presets, { id, name, createdAt, components }],
@@ -458,7 +467,7 @@ export const useDS = create<DSStore>()(
           body: JSON.stringify({
             designYu: true, version: '1',
             preset: { id, name, createdAt },
-            palettes, components,
+            palettes, paletteTags, components,
             semanticList: s.semanticList,
             baseColorList: s.baseColorList,
           }),
@@ -510,7 +519,14 @@ export const useDS = create<DSStore>()(
               const base = sc['500'] ?? s.palettes[k]?.base ?? Object.values(sc)[0];
               if (!base) return;
               // 과거(50 shade 추가 이전)에 저장된 프리셋은 일부 shade가 누락될 수 있어 생성값으로 보완
-              pals[k] = { base, scale: { ...generateScale(base), ...sc } as Record<Shade, string> };
+              // tags는 이 세트에 실제로 저장된 값만 사용 — 코드 기본값(TAILWIND_TAGS)으로 대체하면
+              // 같은 색상 키를 쓰는 다른 세트(예: 앵커의 gray)에 파로스 전용 설명이 새어 들어감
+              const tags = data.paletteTags?.[k];
+              pals[k] = {
+                base,
+                scale: { ...generateScale(base), ...sc } as Record<Shade, string>,
+                ...(tags ? { tags } : {}),
+              };
             });
             next.palettes = pals as Record<PaletteKey, Palette>;
           }
@@ -533,8 +549,10 @@ export const useDS = create<DSStore>()(
         const createdAt = new Date().toISOString();
         const components = JSON.parse(JSON.stringify(s.components));
         const palettes: Record<string, Record<string, string>> = {};
+        const paletteTags: Record<string, Partial<Record<Shade, string>>> = {};
         Object.entries(s.palettes).forEach(([k, pal]) => {
           palettes[k] = Object.fromEntries(Object.entries(pal.scale).map(([sh, hex]) => [sh, hex as string]));
+          if (pal.tags) paletteTags[k] = pal.tags;
         });
         set((prev) => {
           const exists = prev.presets.some((p) => p.id === id);
@@ -549,7 +567,7 @@ export const useDS = create<DSStore>()(
           body: JSON.stringify({
             designYu: true, version: '1',
             preset: { id, name: nm, createdAt, updatedAt: createdAt },
-            palettes, components,
+            palettes, paletteTags, components,
             semanticList: s.semanticList,
             baseColorList: s.baseColorList,
           }),

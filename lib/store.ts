@@ -502,16 +502,16 @@ export const useDS = create<DSStore>()(
             currentSetName: data.preset?.name ?? '',
           };
           if (data.palettes) {
-            const pals = { ...s.palettes };
+            // 이전 세트에서 남은 키가 섞이지 않도록, 불러오는 세트의 palettes로 완전히 교체
+            const pals: Record<string, Palette> = {};
             Object.entries(data.palettes).forEach(([k, scale]) => {
               const sc = scale as Record<string, string>;
-              // 커스텀 베이스 컬러처럼 현재 팔레트에 없는 키도 그대로 보존
-              const base = sc['500'] ?? pals[k]?.base ?? Object.values(sc)[0];
+              const base = sc['500'] ?? s.palettes[k]?.base ?? Object.values(sc)[0];
               if (!base) return;
               // 과거(50 shade 추가 이전)에 저장된 프리셋은 일부 shade가 누락될 수 있어 생성값으로 보완
               pals[k] = { base, scale: { ...generateScale(base), ...sc } as Record<Shade, string> };
             });
-            next.palettes = pals;
+            next.palettes = pals as Record<PaletteKey, Palette>;
           }
           if (data.semanticList) {
             next.semanticList = data.semanticList.map((item) => ({

@@ -340,7 +340,7 @@ function StateColorRow({ label, palValue, shadeValue, opacity, onPalChange, onSh
 }
 
 export function ComponentForm({ compKey }: { compKey: string }) {
-  const { components, palettes, updateComponent, semanticList } = useDS();
+  const { components, palettes, updateComponent, semanticList, statusColorsEnabled } = useDS();
   const s = (components as Record<string, Record<string, unknown>>)[compKey] ?? {};
   const upd = (patch: Record<string, unknown>) => updateComponent(compKey, patch);
   const dragIdx = useRef<number | null>(null);
@@ -349,9 +349,12 @@ export function ComponentForm({ compKey }: { compKey: string }) {
   const [undoHistory, setUndoHistory] = useState<Record<string, SC[]>>({});
 
   // 컬러 시스템에 등록된 키만 노출: 시맨틱 먼저, 그 다음 베이스 팔레트
+  // 상태 컬러(info/success/error/warning)를 컬러 시스템에서 꺼두면 선택지에서도 제외
+  const STATUS_IDS = new Set(['info', 'success', 'error', 'warning']);
   const semanticKeys = semanticList
     .map((i) => i.id)
-    .filter((id) => id in palettes) as PaletteKey[];
+    .filter((id) => id in palettes)
+    .filter((id) => statusColorsEnabled || !STATUS_IDS.has(id)) as PaletteKey[];
   const baseKeys = Object.keys(palettes).filter((k) => !SEMANTIC_IDS.has(k)) as PaletteKey[];
   const availablePaletteKeys: PaletteKey[] = [...semanticKeys, ...baseKeys];
 
